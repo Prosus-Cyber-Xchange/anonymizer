@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"anonymizer-service-v2/internal/handler"
-	"anonymizer-service-v2/pkg/privacy"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/handler"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

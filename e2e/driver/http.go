@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"anonymizer-service-v2/e2e/specifications"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/e2e/specifications"
 )
 
 type HTTPDriver struct {

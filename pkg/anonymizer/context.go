@@ -3,7 +3,7 @@ package anonymizer
 import (
 	"context"
 
-	ctxpkg "anonymizer-service-v2/pkg/context"
+	ctxpkg "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/context"
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/analyzer"
 )

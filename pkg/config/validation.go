@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"anonymizer-service-v2/pkg/privacy"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/pattern"
 	"github.com/asaskevich/govalidator"

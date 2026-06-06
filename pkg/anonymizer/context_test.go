@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"anonymizer-service-v2/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/analyzer"
 	"github.com/stretchr/testify/assert"

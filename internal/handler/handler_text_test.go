@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"anonymizer-service-v2/internal/handler"
-	contextpkg "anonymizer-service-v2/pkg/context"
-	"anonymizer-service-v2/pkg/privacy"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/handler"
+	contextpkg "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/context"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"anonymizer-service-v2/pkg/privacy"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/analyzer"
 	"gopkg.in/yaml.v3"

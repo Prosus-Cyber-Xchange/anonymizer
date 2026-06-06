@@ -1,10 +1,10 @@
 package anonymizer
 
 import (
-	"anonymizer-service-v2/internal/handler"
-	"anonymizer-service-v2/internal/monitoring"
-	"anonymizer-service-v2/pkg/config"
-	"anonymizer-service-v2/pkg/privacy"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/handler"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/monitoring"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/config"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 	"context"
 	"errors"
 	"fmt"

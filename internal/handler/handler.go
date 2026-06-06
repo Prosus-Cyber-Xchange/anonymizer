@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"anonymizer-service-v2/internal/monitoring"
-	"anonymizer-service-v2/pkg/config"
-	contextpkg "anonymizer-service-v2/pkg/context"
-	"anonymizer-service-v2/pkg/privacy"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/monitoring"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/config"
+	contextpkg "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/context"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 	"encoding/json"
 	"fmt"
 	"io"

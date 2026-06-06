@@ -5,7 +5,7 @@ import (
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/pattern"
 
-	"anonymizer-service-v2/pkg/privacy"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/analyzer"
 	"github.com/stretchr/testify/assert"

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"anonymizer-service-v2/pkg/config"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

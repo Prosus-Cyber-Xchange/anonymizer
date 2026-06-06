@@ -8,7 +8,7 @@ import (
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/analyzer"
 
-	"anonymizer-service-v2/internal/monitoring"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/monitoring"
 )
 
 // Service provides anonymization functionality using leakspok

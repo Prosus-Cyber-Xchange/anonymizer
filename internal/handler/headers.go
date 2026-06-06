@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"anonymizer-service-v2/pkg/privacy"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 )
 
 // Header constants for content negotiation.

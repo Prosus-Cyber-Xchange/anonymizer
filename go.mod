@@ -1,4 +1,4 @@
-module anonymizer-service-v2
+module github.com/Prosus-Cyber-Xchange/anonymizer
 
 go 1.25.0
 

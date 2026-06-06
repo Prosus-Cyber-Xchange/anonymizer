@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"anonymizer-service-v2/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
 )
 
 func main() {

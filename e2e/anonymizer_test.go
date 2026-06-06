@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"anonymizer-service-v2/e2e/driver"
-	"anonymizer-service-v2/e2e/specifications"
-	"anonymizer-service-v2/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/e2e/driver"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/e2e/specifications"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
 )
 
 func TestAnonymizer(t *testing.T) {
