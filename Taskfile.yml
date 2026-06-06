@@ -15,6 +15,8 @@ tasks:
     deps: [redis:up]
     cmds:
       - go run cmd/server/main.go
+    cleanup:
+      - task redis:down
 
   build:
     desc: Build application binary.
