@@ -8,7 +8,7 @@ import (
 
 	"github.com/Prosus-Cyber-Xchange/anonymizer/e2e/driver"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/e2e/specifications"
-	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
 	"github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
@@ -43,7 +43,7 @@ func TestAnonymizer_WithRedisCache(t *testing.T) {
 	t.Setenv("PRIVACY_CACHE_REDIS_ADDR", redisAddr)
 	t.Setenv("PRIVACY_CACHE_REDIS_DISABLE_CLUSTER", "true")
 
-	svc, err := anonymizer.NewFromConfig(ctx)
+	svc, err := server.NewFromConfig(ctx)
 	if err != nil {
 		t.Fatalf("failed to create anonymizer service with cache: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestAnonymizer_WithRedisCache_Unreachable(t *testing.T) {
 	t.Setenv("PRIVACY_CACHE_REDIS_ADDR", "localhost:16379")
 	t.Setenv("PRIVACY_CACHE_REDIS_DISABLE_CLUSTER", "true")
 
-	svc, err := anonymizer.NewFromConfig(ctx)
+	svc, err := server.NewFromConfig(ctx)
 	if err != nil {
 		t.Skipf("valkey backend does not gracefully degrade on startup: %v", err)
 	}

@@ -7,7 +7,7 @@ import (
 
 	"github.com/Prosus-Cyber-Xchange/anonymizer/e2e/driver"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/e2e/specifications"
-	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
 )
 
 func TestAnonymizer(t *testing.T) {
@@ -16,7 +16,7 @@ func TestAnonymizer(t *testing.T) {
 	}
 
 	// Wire the application (no external containers needed — no DB/Redis/external APIs)
-	svc, err := anonymizer.NewFromConfig(context.Background())
+	svc, err := server.NewFromConfig(context.Background())
 	if err != nil {
 		t.Fatalf("failed to create anonymizer service: %v", err)
 	}

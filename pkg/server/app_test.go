@@ -1,4 +1,4 @@
-package anonymizer_test
+package server_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +15,7 @@ import (
 )
 
 func TestNewFromConfig_NoPlugins(t *testing.T) {
-	app, err := anonymizer.NewFromConfig(context.Background())
+	app, err := server.NewFromConfig(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, app)
 
@@ -24,7 +24,7 @@ func TestNewFromConfig_NoPlugins(t *testing.T) {
 }
 
 func TestNewFromConfig_DefaultConfig(t *testing.T) {
-	app, err := anonymizer.NewFromConfig(context.Background())
+	app, err := server.NewFromConfig(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, app)
 
@@ -38,7 +38,7 @@ func TestHandler_CEEndpointsWork(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	app, err := anonymizer.NewFromConfig(context.Background())
+	app, err := server.NewFromConfig(context.Background())
 	require.NoError(t, err)
 
 	h := app.Handler()
@@ -62,7 +62,7 @@ func TestHandler_BatchEndpointWorks(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	app, err := anonymizer.NewFromConfig(context.Background())
+	app, err := server.NewFromConfig(context.Background())
 	require.NoError(t, err)
 
 	h := app.Handler()
@@ -79,7 +79,7 @@ func TestHandler_BatchEndpointWorks(t *testing.T) {
 }
 
 func TestHandler_HealthEndpointWorks(t *testing.T) {
-	app, err := anonymizer.NewFromConfig(context.Background())
+	app, err := server.NewFromConfig(context.Background())
 	require.NoError(t, err)
 
 	h := app.Handler()
@@ -92,7 +92,7 @@ func TestHandler_HealthEndpointWorks(t *testing.T) {
 }
 
 func TestHandler_UnknownRouteReturns404(t *testing.T) {
-	app, err := anonymizer.NewFromConfig(context.Background())
+	app, err := server.NewFromConfig(context.Background())
 	require.NoError(t, err)
 
 	h := app.Handler()
@@ -109,7 +109,7 @@ type mockMiddlewarePlugin struct {
 	called bool
 }
 
-func (m *mockMiddlewarePlugin) Middleware(services anonymizer.CoreServices) func(http.Handler) http.Handler {
+func (m *mockMiddlewarePlugin) Middleware(services server.CoreServices) func(http.Handler) http.Handler {
 	m.called = true
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,8 +122,8 @@ func (m *mockMiddlewarePlugin) Middleware(services anonymizer.CoreServices) func
 func TestNewFromConfig_WithMiddlewarePlugin(t *testing.T) {
 	plugin := &mockMiddlewarePlugin{}
 
-	app, err := anonymizer.NewFromConfig(context.Background(),
-		anonymizer.WithPlugin(plugin),
+	app, err := server.NewFromConfig(context.Background(),
+		server.WithPlugin(plugin),
 	)
 	require.NoError(t, err)
 
@@ -146,8 +146,8 @@ func TestHandler_PluginInjectsContextRules(t *testing.T) {
 	// Plugin that injects EMAIL rules into context
 	plugin := &contextRulesPlugin{}
 
-	app, err := anonymizer.NewFromConfig(context.Background(),
-		anonymizer.WithPlugin(plugin),
+	app, err := server.NewFromConfig(context.Background(),
+		server.WithPlugin(plugin),
 	)
 	require.NoError(t, err)
 
@@ -167,7 +167,7 @@ func TestHandler_PluginInjectsContextRules(t *testing.T) {
 // contextRulesPlugin injects EMAIL redaction rules into every request context.
 type contextRulesPlugin struct{}
 
-func (p *contextRulesPlugin) Middleware(services anonymizer.CoreServices) func(http.Handler) http.Handler {
+func (p *contextRulesPlugin) Middleware(services server.CoreServices) func(http.Handler) http.Handler {
 	// Build EMAIL redaction rules once at middleware creation time
 	settings := privacy.PrivacySettings{
 		Entities: []privacy.EntitySettings{
@@ -178,14 +178,14 @@ func (p *contextRulesPlugin) Middleware(services anonymizer.CoreServices) func(h
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := anonymizer.WithRules(r.Context(), rules)
+			ctx := server.WithRules(r.Context(), rules)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
 func TestListenAndServe_RespectsContextCancellation(t *testing.T) {
-	app, err := anonymizer.NewFromConfig(context.Background())
+	app, err := server.NewFromConfig(context.Background())
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -205,7 +205,7 @@ func TestNewFromConfig_ConcurrencyConfigWired(t *testing.T) {
 	t.Setenv("PRIVACY_CONCURRENCY_RULE_RUNNER_POOL_SIZE", "4")
 	t.Setenv("PRIVACY_CONCURRENCY_TOKEN_POOL_SIZE", "8")
 
-	app, err := anonymizer.NewFromConfig(context.Background())
+	app, err := server.NewFromConfig(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, app)
 

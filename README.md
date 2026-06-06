@@ -18,7 +18,7 @@ A REST API service and embeddable Go library that detects and anonymizes persona
 
 ```
 ├── pkg/
-│   ├── anonymizer/         # Public library — App builder, options, plugin interfaces
+│   ├── server/             # Public library — AnonymizerServer builder, options, plugin interfaces
 │   ├── privacy/            # Core anonymization service and rule builder
 │   ├── config/             # Environment variable loading
 │   └── context/            # Context key/values
@@ -183,9 +183,9 @@ curl http://localhost:8080/health
 ## Using as a Library
 
 ```go
-import "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
+import "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
 
-app, err := anonymizer.NewFromConfig(ctx)
+app, err := server.NewFromConfig(ctx)
 if err != nil {
     log.Fatal(err)
 }
@@ -204,7 +204,7 @@ Plugins implement `MiddlewareRegistrar` to inject middleware into the HTTP chain
 ```go
 type myPlugin struct{}
 
-func (p *myPlugin) Middleware(svc anonymizer.CoreServices) func(http.Handler) http.Handler {
+func (p *myPlugin) Middleware(svc server.CoreServices) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             // use svc.Logger, svc.ByteAnalyzer
@@ -218,7 +218,7 @@ func (p *myPlugin) Middleware(svc anonymizer.CoreServices) func(http.Handler) ht
 Register with `WithPlugin`:
 
 ```go
-app, _ := anonymizer.NewFromConfig(ctx, anonymizer.WithPlugin(&myPlugin{}))
+app, _ := server.NewFromConfig(ctx, server.WithPlugin(&myPlugin{}))
 ```
 
 ## Testing

@@ -1,4 +1,4 @@
-package anonymizer
+package server
 
 import (
 	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/handler"
@@ -20,9 +20,9 @@ import (
 	"github.com/uber-go/tally/v4"
 )
 
-// Service is the configured anonymizer application.
+// AnonymizerServer is the configured anonymizer application.
 // Created via NewFromConfig() and used to get an HTTP handler or start the built-in server.
-type Service struct {
+type AnonymizerServer struct {
 	logger         *slog.Logger
 	byteAnalyzer   *analyzer.ByteAnalyzer
 	plugins        []any
@@ -32,15 +32,15 @@ type Service struct {
 	coreServices   CoreServices
 }
 
-// NewFromConfig creates a new Service with the given context and options.
+// NewFromConfig creates a new AnonymizerServer with the given context and options.
 // It initializes all core services and wires any registered plugins.
-func NewFromConfig(ctx context.Context, opts ...Option) (*Service, error) {
+func NewFromConfig(ctx context.Context, opts ...Option) (*AnonymizerServer, error) {
 	envConfig, err := config.LoadEnv()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load environment config: %w", err)
 	}
 
-	a := &Service{
+	a := &AnonymizerServer{
 		envConfig:    envConfig,
 		metricsScope: tally.NoopScope,
 	}
@@ -116,7 +116,7 @@ func newLogger(envConfig config.EnvConfig) *slog.Logger {
 // Handler returns the assembled HTTP handler.
 // It includes the middleware stack, core CE endpoints, and any plugin routes.
 // Call this to embed the anonymizer in a custom HTTP server.
-func (a *Service) Handler() http.Handler {
+func (a *AnonymizerServer) Handler() http.Handler {
 	const healthPath = "/health"
 
 	router := chi.NewRouter()
@@ -178,7 +178,7 @@ func (a *Service) Handler() http.Handler {
 
 // ListenAndServe starts the HTTP server and blocks until ctx is cancelled.
 // It handles graceful shutdown waiting up to Config.GracefulShutdownTimeout.
-func (a *Service) ListenAndServe(ctx context.Context) error {
+func (a *AnonymizerServer) ListenAndServe(ctx context.Context) error {
 	addr := fmt.Sprintf("%s:%d", a.envConfig.Server.Host, a.envConfig.Server.Port)
 	srv := &http.Server{
 		Addr:    addr,

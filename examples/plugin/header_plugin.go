@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 )
 
@@ -33,7 +33,7 @@ func NewServiceRulesPlugin() *ServiceRulesPlugin {
 	}
 }
 
-func (p *ServiceRulesPlugin) Middleware(services anonymizer.CoreServices) func(http.Handler) http.Handler {
+func (p *ServiceRulesPlugin) Middleware(services server.CoreServices) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			serviceName := r.Header.Get("X-Service-Name")
@@ -56,11 +56,11 @@ func (p *ServiceRulesPlugin) Middleware(services anonymizer.CoreServices) func(h
 				return
 			}
 
-			ctx := anonymizer.WithRules(r.Context(), rules)
+			ctx := server.WithRules(r.Context(), rules)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
 // Verify interface compliance at compile time.
-var _ anonymizer.MiddlewareRegistrar = (*ServiceRulesPlugin)(nil)
+var _ server.MiddlewareRegistrar = (*ServiceRulesPlugin)(nil)

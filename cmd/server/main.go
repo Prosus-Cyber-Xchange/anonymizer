@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 }
 
 func run(ctx context.Context) error {
-	app, err := anonymizer.NewFromConfig(ctx)
+	app, err := server.NewFromConfig(ctx)
 	if err != nil {
 		return err
 	}

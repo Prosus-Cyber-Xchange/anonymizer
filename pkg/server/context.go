@@ -1,4 +1,4 @@
-package anonymizer
+package server
 
 import (
 	"context"

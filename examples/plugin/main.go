@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
 )
 
 func main() {
@@ -18,9 +18,9 @@ func main() {
 
 	plugin := NewServiceRulesPlugin()
 
-	app, err := anonymizer.NewFromConfig(ctx,
-		anonymizer.WithLogger(logger),
-		anonymizer.WithPlugin(plugin),
+	app, err := server.NewFromConfig(ctx,
+		server.WithLogger(logger),
+		server.WithPlugin(plugin),
 	)
 	if err != nil {
 		logger.Error("failed to create service", slog.String("error", err.Error()))
