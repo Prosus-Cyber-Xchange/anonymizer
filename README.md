@@ -203,6 +203,14 @@ A plugin may implement both interfaces simultaneously.
 
 ## Configuration
 
+### Environment Files
+
+Copy `.env.example` to `.env` and adjust values. The `task run` command loads `.env` automatically via Taskfile's `dotenv` directive.
+
+```bash
+cp .env.example .env
+```
+
 ### Environment Variables
 
 | Variable | Description | Default | Required |
@@ -238,12 +246,30 @@ A plugin may implement both interfaces simultaneously.
 
 ## Running the Service
 
+### Quick Start
+
+```bash
+# Copy the environment file
+cp .env.example .env
+
+# Start Redis and run the service
+task run
+```
+
+This will automatically start a Redis container and run the service with the environment variables from `.env`.
+
+To stop the Redis container:
+
+```bash
+task redis:down
+```
+
 ### Build
 ```bash
 go build -o anonymizer ./cmd/server
 ```
 
-### Run
+### Run manually
 ```bash
 export PORT=8080
 export LOG_LEVEL=INFO

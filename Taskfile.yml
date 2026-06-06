@@ -2,6 +2,8 @@ version: "3"
 
 set: [pipefail]
 
+dotenv: [".env"]
+
 tasks:
   help:
     desc: Display this help.
@@ -10,6 +12,7 @@ tasks:
 
   run:
     desc: Execute application locally.
+    deps: [redis:up]
     cmds:
       - go run cmd/server/main.go
 
@@ -78,3 +81,20 @@ tasks:
     cmds:
       - go mod tidy
       - go mod vendor
+
+  redis:up:
+    desc: Start a Redis container for local development.
+    cmds:
+      - |
+        if ! docker ps --format '{{.Names}}' | grep -q '^anonymizer-redis$'; then
+          if docker ps -a --format '{{.Names}}' | grep -q '^anonymizer-redis$'; then
+            docker start anonymizer-redis
+          else
+            docker run -d --name anonymizer-redis -p 6379:6379 redis:7-alpine
+          fi
+        fi
+
+  redis:down:
+    desc: Stop and remove the Redis container.
+    cmds:
+      - docker rm -f anonymizer-redis 2>/dev/null || true
