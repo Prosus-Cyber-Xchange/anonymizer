@@ -185,16 +185,16 @@ curl http://localhost:8080/health
 ```go
 import "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
 
-app, err := server.NewFromConfig(ctx)
+anonymizer, err := server.NewFromConfig(ctx)
 if err != nil {
     log.Fatal(err)
 }
 
 // Embed in your existing server
-mux.Handle("/anon/", http.StripPrefix("/anon", app.Handler()))
+mux.Handle("/anon/", http.StripPrefix("/anon", anonymizer.Handler()))
 
 // Or run standalone
-app.ListenAndServe(ctx)
+anonymizer.ListenAndServe(ctx)
 ```
 
 ### Plugin System
@@ -218,7 +218,7 @@ func (p *myPlugin) Middleware(svc server.CoreServices) func(http.Handler) http.H
 Register with `WithPlugin`:
 
 ```go
-app, _ := server.NewFromConfig(ctx, server.WithPlugin(&myPlugin{}))
+anonymizer, _ := server.NewFromConfig(ctx, server.WithPlugin(&myPlugin{}))
 ```
 
 ## Testing
