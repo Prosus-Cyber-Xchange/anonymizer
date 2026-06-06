@@ -2,7 +2,6 @@ package anonymizer
 
 import (
 	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/handler"
-	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/monitoring"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/config"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 	"context"
@@ -14,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/analyzer"
-	analyzercache "github.com/Prosus-Cyber-Xchange/leakspok/analyzer/cache"
 	leakspokmonitoring "github.com/Prosus-Cyber-Xchange/leakspok/monitoring"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -60,15 +58,12 @@ func NewFromConfig(ctx context.Context, opts ...Option) (*Service, error) {
 	// Create ByteAnalyzer if not provided, populating RunnerOptions from env config.
 	if a.byteAnalyzer == nil {
 
-		promRegistry := monitoring.NewMetricRegistry()
-
 		// Build RunnerOptions with Cache and Concurrency.
 		runnerOpts := analyzer.RunnerOptions{
 			Cache: analyzer.CacheOptions{
 				Enabled:                 envConfig.Privacy.Cache,
-				Backend:                 envConfig.Privacy.CacheBackend,
 				TTL:                     envConfig.Privacy.CacheTTL,
-				MemorySize:              envConfig.Privacy.CacheSize,
+				DisableInMemoryCache:    envConfig.Privacy.DisableInMemoryCache,
 				RedisAddr:               envConfig.Privacy.RedisCacheAddr,
 				RedisPassword:           envConfig.RedisCacheToken,
 				RedisDialTimeout:        envConfig.Privacy.RedisDialTimeout,
@@ -78,11 +73,6 @@ func NewFromConfig(ctx context.Context, opts ...Option) (*Service, error) {
 				RedisMinIdleConns:       envConfig.Privacy.RedisMinIdleConns,
 				RedisInsecureSkipVerify: true,
 				RedisDisableClusterMode: envConfig.Privacy.RedisDisableCluster,
-				Metric: analyzercache.RuleMatchingCacheMetricOptions{
-					Enabled:     envConfig.Privacy.CacheMetrics,
-					Registry:    promRegistry,
-					ServiceName: envConfig.ServiceName,
-				},
 			},
 		}
 

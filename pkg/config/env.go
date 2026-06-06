@@ -13,9 +13,7 @@ type EnvConfig struct {
 
 	Privacy struct {
 		Cache                  bool          `env:"CACHE_ENABLED" envDefault:"false"`
-		CacheBackend           string        `env:"CACHE_BACKEND" envDefault:"gocache"`
 		CacheTTL               time.Duration `env:"CACHE_TTL" envDefault:"1h"`
-		CacheSize              int           `env:"CACHE_SIZE" envDefault:"0"`
 		RedisCacheAddr         string        `env:"CACHE_REDIS_ADDR" envDefault:""`
 		RedisDisableCluster    bool          `env:"CACHE_REDIS_DISABLE_CLUSTER" envDefault:"false"`
 
@@ -26,6 +24,8 @@ type EnvConfig struct {
 		RedisMinIdleConns int           `env:"CACHE_REDIS_MIN_IDLE_CONNS" envDefault:"0"`
 
 		CacheMetrics bool `env:"CACHE_METRICS" envDefault:"true"`
+
+		DisableInMemoryCache bool `env:"CACHE_DISABLE_IN_MEMORY" envDefault:"false"`
 
 		// Concurrency settings
 		ConcurrencyEnabled                 bool          `env:"CONCURRENCY_ENABLED" envDefault:"false"`
