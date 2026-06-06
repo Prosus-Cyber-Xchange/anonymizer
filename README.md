@@ -1,377 +1,248 @@
-# Anonymizer Service V2 — Community Edition
+# Anonymizer Service — Community Edition
 
-A REST API service and embeddable Go library that detects and anonymizes personally identifiable information (PII) in strings using the [leakspok](https://github.com/New-Horizons-Team/leakspok) library.
+A REST API service and embeddable Go library that detects and anonymizes personally identifiable information (PII) using the [leakspok](https://github.com/New-Horizons-Team/leakspok) library.
 
 ## Features
 
-- **Flexible anonymization**: Support for both redaction and masking strategies
-- **Exception handling**: Define patterns that should not be anonymized
-- **Inline privacy rules**: Supply anonymization settings directly in the request body — no YAML config required
-- **Batch processing**: Anonymize multiple texts in a single request via `/api/v1/anonymize/batch`
-- **Plugin system**: Extend the service with custom endpoints and rules loaders via compile-time plugins
-- **Embeddable library**: Import the `anonymizer` package and embed the service in any Go application
-- **Comprehensive logging**: Built-in access logging and structured logging
-- **Health checks**: Health endpoint for monitoring
+- **Inline privacy rules** — supply anonymization settings directly in the request body
+- **Header-based rules** — text/plain requests use `X-Anonymize-*` headers
+- **Batch processing** — anonymize multiple texts in a single request
+- **Exception handling** — define patterns that should not be anonymized
+- **Redaction and masking** — replace PII entirely or partially mask it
+- **Valkey/Redis caching** — rule matching results cached via server-assisted client-side caching
+- **Plugin system** — inject middleware into the HTTP chain at compile time
+- **Embeddable library** — import as a Go package and embed in any application
+- **Structured logging** — JSON logging via `log/slog`
 
 ## Architecture
 
 ```
-anonymizer-api-v2-ce/
-├── anonymizer/             # Public library package — App builder and plugin interfaces
-│   ├── app.go              # App struct, New(), Handler(), ListenAndServe()
-│   ├── options.go          # Functional options (WithPlugin, WithLogger, etc.)
-│   └── plugin.go           # RouteRegistrar and RulesLoaderProvider interfaces
-├── privacy/                # Core business logic (public)
-│   ├── service.go          # Anonymization service
-│   ├── settings.go         # Configuration models
-│   └── rule_builder.go     # Converts config to leakspok rules
-├── config/                 # Configuration loading (public)
-│   └── env.go              # Environment variables
+├── pkg/
+│   ├── anonymizer/         # Public library — App builder, options, plugin interfaces
+│   ├── privacy/            # Core anonymization service and rule builder
+│   ├── config/             # Environment variable loading
+│   └── context/            # Context key/values
 ├── internal/
-│   └── handler/            # HTTP handlers (internal)
-│       ├── handler.go
-│       ├── handler_metrics.go
-│       └── router.go
+│   ├── handler/            # HTTP handlers and middleware
+│   └── monitoring/         # Prometheus metrics
 ├── cmd/server/             # Application entry point
-│   └── main.go
+├── e2e/                    # End-to-end tests (specification + driver pattern)
+│   ├── driver/             # HTTP driver
+│   └── specifications/     # Protocol-agnostic test specs
+├── examples/plugin/        # Example plugin implementation
+├── vendor/                 # Vendored dependencies
+└── data/                   # Sample data
 ```
 
-## API Schema
-
-The service exposes two anonymization endpoints:
-
-| Endpoint | Description |
-|----------|-------------|
-| `POST /api/v1/anonymize` | General endpoint — privacy rules provided inline in the request body |
-| `POST /api/v1/anonymize/batch` | Batch endpoint — process multiple items in a single request |
-
----
-
-### `POST /api/v1/anonymize`
-
-Privacy rules are provided inline in the JSON request body.
-
-**Request:**
-```bash
-curl -X POST http://localhost:8080/api/v1/anonymize \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Contact joe.doe@company.com, CPF: 123.456.789-09",
-    "settings": {
-      "entities": [
-        {
-          "name": "EMAIL",
-          "redaction": { "replacement": "<EMAIL_REDACTED>" }
-        },
-        {
-          "name": "CPF_NUMBER",
-          "redaction": { "replacement": "<CPF_REDACTED>" }
-        }
-      ]
-    }
-  }'
-```
-
-**Response:**
-```json
-{
-  "anonymized_text": "Contact <EMAIL_REDACTED>, CPF: <CPF_REDACTED>",
-  "detected_entities": ["CPF_NUMBER", "EMAIL"],
-  "anonymized_entities": ["CPF_NUMBER", "EMAIL"]
-}
-```
-
----
-
-### `POST /api/v1/anonymize/batch`
-
-Processes multiple anonymization requests in a single HTTP call. Each item in the array is independent and can have its own privacy settings. The endpoint fails fast: if any item is invalid or fails anonymization, the entire request returns an error.
-
-The maximum number of items per request is controlled by the `MAX_BATCH_SIZE` environment variable (default: `100`).
-
-**Request:**
-```bash
-curl -X POST http://localhost:8080/api/v1/anonymize/batch \
-  -H "Content-Type: application/json" \
-  -d '[
-    {
-      "text": "Contact joe.doe@company.com",
-      "settings": {
-        "entities": [
-          {
-            "name": "EMAIL",
-            "redaction": { "replacement": "<EMAIL_REDACTED>" }
-          }
-        ]
-      }
-    },
-    {
-      "text": "CPF: 123.456.789-09 and phone: +55 11 99999-9999",
-      "settings": {
-        "entities": [
-          {
-            "name": "CPF_NUMBER",
-            "redaction": { "replacement": "<CPF_REDACTED>" }
-          },
-          {
-            "name": "PHONE",
-            "mask": { "replacement": "*", "maxLength": 4 }
-          }
-        ]
-      }
-    }
-  ]'
-```
-
-**Response:**
-```json
-[
-  {
-    "anonymized_text": "Contact <EMAIL_REDACTED>",
-    "detected_entities": ["EMAIL"],
-    "anonymized_entities": ["EMAIL"]
-  },
-  {
-    "anonymized_text": "CPF: <CPF_REDACTED> and phone: ****9-9999",
-    "detected_entities": ["CPF_NUMBER", "PHONE"],
-    "anonymized_entities": ["CPF_NUMBER", "PHONE"]
-  }
-]
-```
-
-**Error — batch size exceeded:**
-```json
-{
-  "code": "BATCH_SIZE_EXCEEDED",
-  "message": "batch size 150 exceeds maximum allowed size of 100"
-}
-```
-
-## Using as a Library
-
-Import the `anonymizer` package to embed the service in your own Go application:
-
-```go
-import "anonymizer-service-v2/anonymizer"
-
-app, err := anonymizer.New(anonymizer.Config{
-    Port:         8080,
-    MaxBatchSize: 100,
-})
-if err != nil {
-    log.Fatal(err)
-}
-
-// Embed in your existing HTTP server:
-mux.Handle("/anon/", http.StripPrefix("/anon", app.Handler()))
-
-// Or run the built-in server:
-app.ListenAndServe(ctx)
-```
-
-### Plugin System
-
-Plugins extend the service at compile time via two interfaces:
-
-**`RouteRegistrar`** — add custom HTTP endpoints under `/api/v1`:
-
-```go
-type myPlugin struct{}
-
-func (p *myPlugin) RegisterRoutes(r chi.Router, svc anonymizer.CoreServices) {
-    r.Post("/my-endpoint", func(w http.ResponseWriter, r *http.Request) {
-        // use svc.PrivacyService, svc.Logger, svc.ByteAnalyzer
-    })
-}
-
-app, _ := anonymizer.New(cfg, anonymizer.WithPlugin(&myPlugin{}))
-```
-
-**`RulesLoaderProvider`** — supply a custom privacy rules loader (e.g., database-backed):
-
-```go
-type myLoader struct{}
-
-func (p *myLoader) RulesLoader(svc anonymizer.CoreServices) (privacy.PrivacyRulesLoader, error) {
-    return myDBLoader{db: myDB}, nil
-}
-
-app, _ := anonymizer.New(cfg, anonymizer.WithPlugin(&myLoader{}))
-```
-
-A plugin may implement both interfaces simultaneously.
-
-## Configuration
-
-### Environment Files
-
-Copy `.env.example` to `.env` and adjust values. The `task run` command loads `.env` automatically via Taskfile's `dotenv` directive.
+## Quick Start
 
 ```bash
-cp .env.example .env
-```
-
-### Environment Variables
-
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `PORT` | HTTP server port | - | Yes |
-| `HOST` | HTTP server host | `0.0.0.0` | No |
-| `LOG_LEVEL` | Logging level | `INFO` | No |
-| `GRACEFUL_SHUTDOWN_TIMEOUT` | Server shutdown timeout | - | Yes |
-| `MAX_BATCH_SIZE` | Maximum number of items allowed in a single batch request | `100` | No |
-
-### Supported Entities
-
-- `EMAIL` — Email addresses
-- `CPF_NUMBER` — Brazilian CPF
-- `CNPJ_NUMBER` — Brazilian CNPJ
-- `IP` / `IP_ADDRESS` — IPv4 and IPv6 addresses
-- `IPV4` — IPv4 only
-- `IPV6` — IPv6 only
-- `CREDIT_CARD` — Credit card numbers
-- `PHONE` — Phone numbers
-- `LINK` / `URL` — URLs
-- `SSN` — US Social Security Numbers
-- `ADDRESS` — Street addresses
-- `BANK_INFO` — Banking information (IBAN)
-- `UUID` — UUIDs and GUIDs
-
-### Exception Operators
-
-- `equal` — Exact match (case-sensitive)
-- `ignoreCaseEqual` — Exact match (case-insensitive)
-- `startsWith` — Prefix match
-- `endsWith` — Suffix match
-
-## Running the Service
-
-### Quick Start
-
-```bash
-# Copy the environment file
+# Copy the environment file and adjust as needed
 cp .env.example .env
 
 # Start Redis and run the service
 task run
 ```
 
-This will automatically start a Redis container and run the service with the environment variables from `.env`.
-
-To stop the Redis container:
+This starts a Redis container, loads `.env`, and runs the service. To stop Redis:
 
 ```bash
 task redis:down
 ```
 
-### Build
-```bash
-go build -o anonymizer ./cmd/server
-```
+## Configuration
 
-### Run manually
-```bash
-export PORT=8080
-export LOG_LEVEL=INFO
-export GRACEFUL_SHUTDOWN_TIMEOUT=30s
+Copy `.env.example` to `.env`. The `task run` command loads it automatically via Taskfile's `dotenv` directive. All cache/concurrency/OTel variables are available to the Dockerfile and production workloads.
 
-./anonymizer
-```
+### Environment Variables
 
-## Example Usage
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | HTTP server port | `8080` |
+| `HOST` | HTTP server host | `0.0.0.0` |
+| `LOG_LEVEL` | Logging level (`DEBUG`, `INFO`, `WARN`, `ERROR`) | `INFO` |
+| `GRACEFUL_SHUTDOWN_TIMEOUT` | Server shutdown timeout | `30s` |
+| `MAX_BATCH_SIZE` | Max items per batch request | `100` |
+| `PATTERN_MONITORING_ENABLED` | Enable leakspok pattern monitoring | `false` |
+| `PRIVACY_CACHE_ENABLED` | Enable rule matching cache | `false` |
+| `PRIVACY_CACHE_TTL` | Cache entry TTL | `1h` |
+| `PRIVACY_CACHE_REDIS_ADDR` | Valkey/Redis address (`host:port`) | `""` |
+| `PRIVACY_CACHE_REDIS_DISABLE_CLUSTER` | Use standalone client instead of cluster | `false` |
+| `PRIVACY_CACHE_REDIS_POOL_SIZE` | Max connections per CPU | `0` |
+| `PRIVACY_CACHE_REDIS_MIN_IDLE_CONNS` | Min idle connections | `0` |
+| `PRIVACY_CACHE_REDIS_DIAL_TIMEOUT` | Connection dial timeout | `0` |
+| `PRIVACY_CACHE_REDIS_READ_TIMEOUT` | Socket read timeout | `0` |
+| `PRIVACY_CACHE_REDIS_WRITE_TIMEOUT` | Socket write timeout | `0` |
+| `PRIVACY_CACHE_DISABLE_IN_MEMORY` | Disable server-assisted client-side caching | `false` |
+| `PRIVACY_CACHE_METRICS` | Enable cache Prometheus metrics | `true` |
+| `PRIVACY_CONCURRENCY_ENABLED` | Enable concurrent processing | `false` |
+| `PRIVACY_CONCURRENCY_TOKEN_PROCESSING` | Parallel token evaluation | `false` |
+| `PRIVACY_CONCURRENCY_RULE_PROCESSING` | Parallel rule evaluation | `false` |
+| `PRIVACY_CONCURRENCY_RULE_RUNNER_POOL_SIZE` | Rule runner goroutine pool size | `0` |
+| `PRIVACY_CONCURRENCY_TOKEN_POOL_SIZE` | Token goroutine pool size | `0` |
+| `PRIVACY_CONCURRENCY_MAX_GOROUTINE_IDLE_TIMEOUT` | Idle goroutine reclamation timeout | `10s` |
+| `OTEL_ENABLED` | Enable OpenTelemetry | `false` |
+| `OTEL_EXPORTER_ADDR` | OTel exporter address | `localhost:4317` |
+| `REDIS_ANONYMIZER_SERVICE_V2_CACHE_TOKEN` | Redis auth password | `""` |
 
-### Anonymize endpoint (inline rules)
+## API
+
+### `POST /api/v1/anonymize`
+
+Privacy rules provided inline in the JSON body, or via headers for text/plain.
+
+**JSON request:**
 ```bash
 curl -X POST http://localhost:8080/api/v1/anonymize \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Call me at +55 11 99999-9999",
+    "text": "Contact john@example.com, CPF: 123.456.789-09",
     "settings": {
       "entities": [
-        { "name": "PHONE", "redaction": { "replacement": "<PHONE_REDACTED>" } }
+        { "name": "EMAIL", "redaction": { "replacement": "<EMAIL>" } },
+        { "name": "CPF_NUMBER", "redaction": { "replacement": "<CPF>" } }
       ]
     }
   }'
 ```
 
-**Response:**
+**JSON response:**
 ```json
 {
-  "anonymized_text": "Call me at <PHONE_REDACTED>",
-  "detected_entities": ["PHONE"],
-  "anonymized_entities": ["PHONE"]
+  "anonymized_text": "Contact <EMAIL>, CPF: <CPF>",
+  "detected_entities": ["CPF_NUMBER", "EMAIL"],
+  "anonymized_entities": ["CPF_NUMBER", "EMAIL"]
 }
 ```
 
-### Batch endpoint
+**text/plain request with headers:**
+```bash
+curl -X POST http://localhost:8080/api/v1/anonymize \
+  -H "Content-Type: text/plain" \
+  -H "X-Anonymize-Entities: EMAIL" \
+  -H "X-Anonymize-Placeholder: <REDACTED>" \
+  -d "Contact john@example.com"
+```
+
+**text/plain response headers:**
+```
+X-Anonymize-Detected-Entities: EMAIL
+X-Anonymize-Anonymized-Entities: EMAIL
+```
+
+### `POST /api/v1/anonymize/batch`
+
 ```bash
 curl -X POST http://localhost:8080/api/v1/anonymize/batch \
   -H "Content-Type: application/json" \
   -d '[
     {
-      "text": "Email: joe@example.com",
-      "settings": { "entities": [{ "name": "EMAIL", "redaction": { "replacement": "<EMAIL_REDACTED>" } }] }
+      "text": "Email: john@example.com",
+      "settings": { "entities": [{ "name": "EMAIL", "redaction": { "replacement": "<EMAIL>" } }] }
     },
     {
       "text": "CPF: 123.456.789-09",
-      "settings": { "entities": [{ "name": "CPF_NUMBER", "redaction": { "replacement": "<CPF_REDACTED>" } }] }
+      "settings": { "entities": [{ "name": "CPF_NUMBER", "redaction": { "replacement": "<CPF>" } }] }
     }
   ]'
 ```
 
-**Response:**
-```json
-[
-  {
-    "anonymized_text": "Email: <EMAIL_REDACTED>",
-    "detected_entities": ["EMAIL"],
-    "anonymized_entities": ["EMAIL"]
-  },
-  {
-    "anonymized_text": "CPF: <CPF_REDACTED>",
-    "detected_entities": ["CPF_NUMBER"],
-    "anonymized_entities": ["CPF_NUMBER"]
-  }
-]
-```
+### `GET /health`
 
-### Health Check
 ```bash
 curl http://localhost:8080/health
 ```
 
-**Response:**
+## Supported Entities
+
+| Entity | Description |
+|--------|-------------|
+| `EMAIL` | Email addresses |
+| `CPF_NUMBER` | Brazilian CPF |
+| `CNPJ_NUMBER` | Brazilian CNPJ |
+| `IP` / `IP_ADDRESS` | IPv4 and IPv6 |
+| `IPV4` | IPv4 only |
+| `IPV6` | IPv6 only |
+| `CREDIT_CARD` | Credit card numbers |
+| `PHONE` | Phone numbers |
+| `LINK` / `URL` | URLs |
+| `SSN` | US Social Security Numbers |
+| `ADDRESS` | Street addresses |
+| `BANK_INFO` | Banking information (IBAN) |
+| `UUID` | UUIDs and GUIDs |
+
+### Exception Operators
+
+| Operator | Description |
+|----------|-------------|
+| `equal` | Exact match (case-sensitive) |
+| `ignoreCaseEqual` | Exact match (case-insensitive) |
+| `startsWith` | Prefix match |
+| `endsWith` | Suffix match |
+
+## Using as a Library
+
+```go
+import "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/anonymizer"
+
+app, err := anonymizer.NewFromConfig(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Embed in your existing server
+mux.Handle("/anon/", http.StripPrefix("/anon", app.Handler()))
+
+// Or run standalone
+app.ListenAndServe(ctx)
 ```
-HTTP 200 OK
+
+### Plugin System
+
+Plugins implement `MiddlewareRegistrar` to inject middleware into the HTTP chain:
+
+```go
+type myPlugin struct{}
+
+func (p *myPlugin) Middleware(svc anonymizer.CoreServices) func(http.Handler) http.Handler {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            // use svc.Logger, svc.ByteAnalyzer
+            ctx := context.WithValue(r.Context(), "my_key", "value")
+            next.ServeHTTP(w, r.WithContext(ctx))
+        })
+    }
+}
+```
+
+Register with `WithPlugin`:
+
+```go
+app, _ := anonymizer.NewFromConfig(ctx, anonymizer.WithPlugin(&myPlugin{}))
 ```
 
 ## Testing
 
 ```bash
 # All tests
-go test ./...
+task test
 
-# Unit tests only
-go test -short ./...
+# Unit tests only (skips e2e)
+task test:unit
+
+# E2E tests (includes Redis with testcontainers)
+task test:e2e
 ```
 
 ## Dependencies
 
 - [leakspok](https://github.com/New-Horizons-Team/leakspok) — PII detection and anonymization
-- [foodsec-go-sdk](https://code.ifoodcorp.com.br/ifood/security/libs/go/foodsec-go-sdk) — HTTP server, logging, configuration
 - [chi](https://github.com/go-chi/chi) — HTTP router
-- [env](https://github.com/caarlos0/env) — Environment variable parsing
-- [yaml.v3](https://gopkg.in/yaml.v3) — YAML parsing
-
-## Code Standards
-
-- **Clean Code & SOLID principles**: Maintainable and testable code
-- **Domain-driven package naming**: `privacy`, `config`, `handler` (not `utils`, `common`)
-- **Interface declaration**: Interfaces declared where used, not where implemented
-- **Composition over inheritance**: Extensive use of composition
-- **Byte-based processing**: Uses `ByteAnalyzer` to avoid unnecessary string conversions
-- **Plugin system**: Compile-time interface composition — no `plugin` package, no dynamic loading
+- [valkey-go](https://github.com/valkey-io/valkey-go) — Valkey/Redis client with server-assisted client-side caching
+- [prometheus/client_golang](https://github.com/prometheus/client_golang) — Metrics
+- [caarlos0/env](https://github.com/caarlos0/env) — Environment variable parsing
+- [testcontainers-go](https://github.com/testcontainers/testcontainers-go) — E2E test infrastructure
 
 ## License
 
-Copyright © 2025 iFood
+[Apache 2.0](LICENSE)
