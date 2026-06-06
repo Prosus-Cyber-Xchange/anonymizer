@@ -66,6 +66,7 @@ func NewFromConfig(ctx context.Context, opts ...Option) (*Service, error) {
 		runnerOpts := analyzer.RunnerOptions{
 			Cache: analyzer.CacheOptions{
 				Enabled:                 envConfig.Privacy.Cache,
+				Backend:                 envConfig.Privacy.CacheBackend,
 				TTL:                     envConfig.Privacy.CacheTTL,
 				MemorySize:              envConfig.Privacy.CacheSize,
 				RedisAddr:               envConfig.Privacy.RedisCacheAddr,
@@ -76,6 +77,7 @@ func NewFromConfig(ctx context.Context, opts ...Option) (*Service, error) {
 				RedisPoolSize:           envConfig.Privacy.RedisPoolSize,
 				RedisMinIdleConns:       envConfig.Privacy.RedisMinIdleConns,
 				RedisInsecureSkipVerify: true,
+				RedisDisableClusterMode: envConfig.Privacy.RedisDisableCluster,
 				Metric: analyzercache.RuleMatchingCacheMetricOptions{
 					Enabled:     envConfig.Privacy.CacheMetrics,
 					Registry:    promRegistry,

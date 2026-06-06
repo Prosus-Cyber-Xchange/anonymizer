@@ -12,10 +12,12 @@ type EnvConfig struct {
 	ServiceName string `env:"SERVICE_NAME" envDefault:""`
 
 	Privacy struct {
-		Cache          bool          `env:"CACHE_ENABLED" envDefault:"false"`
-		CacheTTL       time.Duration `env:"CACHE_TTL" envDefault:"1h"`
-		CacheSize      int           `env:"CACHE_SIZE" envDefault:"0"`
-		RedisCacheAddr string        `env:"CACHE_REDIS_ADDR" envDefault:""`
+		Cache                  bool          `env:"CACHE_ENABLED" envDefault:"false"`
+		CacheBackend           string        `env:"CACHE_BACKEND" envDefault:"gocache"`
+		CacheTTL               time.Duration `env:"CACHE_TTL" envDefault:"1h"`
+		CacheSize              int           `env:"CACHE_SIZE" envDefault:"0"`
+		RedisCacheAddr         string        `env:"CACHE_REDIS_ADDR" envDefault:""`
+		RedisDisableCluster    bool          `env:"CACHE_REDIS_DISABLE_CLUSTER" envDefault:"false"`
 
 		RedisDialTimeout  time.Duration `env:"CACHE_REDIS_DIAL_TIMEOUT" envDefault:"0"`
 		RedisReadTimeout  time.Duration `env:"CACHE_REDIS_READ_TIMEOUT" envDefault:"0"`

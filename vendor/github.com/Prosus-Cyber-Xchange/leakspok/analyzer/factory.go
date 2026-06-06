@@ -55,6 +55,9 @@ type CacheOptions struct {
 	// RedisPingOnConnect controls whether a Ping is sent to Redis to verify connectivity
 	// when the client is first created. Default: false.
 	RedisPingOnConnect bool
+	// RedisDisableClusterMode disables cluster mode and uses a standalone client instead.
+	// Default: false (cluster mode enabled).
+	RedisDisableClusterMode bool
 	// Metric configures Prometheus metrics (gocache backend only).
 	Metric analyzercache.RuleMatchingCacheMetricOptions
 	// TracingEnabled enables DataDog APM tracing for cache store operations.
@@ -119,6 +122,7 @@ func buildCacheStore(ctx context.Context, options CacheOptions) (analyzercache.C
 			MinIdleConns:       options.RedisMinIdleConns,
 			InsecureSkipVerify: options.RedisInsecureSkipVerify,
 			PingOnConnect:      options.RedisPingOnConnect,
+			DisableClusterMode: options.RedisDisableClusterMode,
 		},
 		Metrics: options.Metric,
 	})
