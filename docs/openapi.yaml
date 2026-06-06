@@ -1,0 +1,312 @@
+openapi: "3.1.0"
+info:
+  title: Anonymizer API
+  version: "1.0.0"
+  description: |
+    REST API for detecting and anonymizing PII (Personally Identifiable Information).
+    Supports both JSON (inline privacy settings) and text/plain (header-based rules) content negotiation.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/anonymize:
+    post:
+      summary: Anonymize PII in text
+      operationId: anonymize
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnonymizeRequest"
+            examples:
+              redactEmail:
+                summary: Redact an email address
+                value:
+                  text: "Contact john@example.com"
+                  settings:
+                    entities:
+                      - name: EMAIL
+                        redaction:
+                          replacement: "<EMAIL>"
+              withExceptions:
+                summary: Redact email with domain exception
+                value:
+                  text: "Sent from system@ifood.com.br to customer@gmail.com"
+                  settings:
+                    entities:
+                      - name: EMAIL
+                        exceptions:
+                          - reason: "Internal addresses are not PII"
+                            match:
+                              operator: endsWith
+                              pattern: "@ifood.com.br"
+                        redaction:
+                          replacement: "<EMAIL_REDACTED>"
+          text/plain:
+            schema:
+              type: string
+              description: Raw text to anonymize
+        headers:
+          X-Anonymize-Entities:
+            schema:
+              type: string
+            description: Comma-separated entity names (required for text/plain)
+            example: "EMAIL,CPF_NUMBER"
+          X-Anonymize-Strategy:
+            schema:
+              type: string
+              enum: [redact, mask]
+              default: redact
+            description: Anonymization strategy
+          X-Anonymize-Placeholder:
+            schema:
+              type: string
+              default: "<REDACTED>"
+            description: Replacement string for redaction
+          X-Anonymize-Mask-Char:
+            schema:
+              type: string
+              default: "*"
+            description: Masking character
+          X-Anonymize-Mask-Length:
+            schema:
+              type: integer
+              default: 4
+            description: Number of characters to mask
+      responses:
+        "200":
+          description: Successful anonymization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnonymizeResponse"
+            text/plain:
+              schema:
+                type: string
+                description: Anonymized text
+              headers:
+                X-Anonymize-Detected-Entities:
+                  schema:
+                    type: string
+                  description: Comma-separated detected entity types
+                X-Anonymize-Anonymized-Entities:
+                  schema:
+                    type: string
+                  description: Comma-separated anonymized entity types
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalidRequest:
+                  value:
+                    code: "INVALID_REQUEST"
+                    error: "invalid character 'x' looking for beginning of value"
+                invalidSettings:
+                  value:
+                    code: "INVALID_SETTINGS"
+                    error: "entity EMAIL has neither redaction nor mask settings"
+                noRules:
+                  value:
+                    code: "NO_RULES"
+                    error: "X-Anonymize-Entities header is required when no rules are pre-configured"
+        "415":
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: "UNSUPPORTED_MEDIA_TYPE"
+                error: "unsupported content type: application/xml"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: "ANONYMIZATION_FAILED"
+                error: "unexpected error during anonymization"
+  /api/v1/anonymize/batch:
+    post:
+      summary: Anonymize PII in multiple texts
+      operationId: anonymizeBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/AnonymizeRequest"
+              maxItems: 100
+            examples:
+              twoItems:
+                summary: Anonymize email in first item, phone in second
+                value:
+                  - text: "Contact john@example.com"
+                    settings:
+                      entities:
+                        - name: EMAIL
+                          redaction:
+                            replacement: "<EMAIL>"
+                  - text: "Call +55 11 99999-9999"
+                    settings:
+                      entities:
+                        - name: PHONE
+                          redaction:
+                            replacement: "<PHONE>"
+      responses:
+        "200":
+          description: Successful anonymization
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnonymizeResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                batchSizeExceeded:
+                  value:
+                    code: "BATCH_SIZE_EXCEEDED"
+                    error: "batch size 150 exceeds maximum allowed size of 100"
+                invalidSettings:
+                  value:
+                    code: "INVALID_SETTINGS"
+                    error: "entity EMAIL has neither redaction nor mask settings"
+        "415":
+          description: Unsupported media type (batch only accepts JSON)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    AnonymizeRequest:
+      type: object
+      required: [text, settings]
+      properties:
+        text:
+          type: string
+          description: The text to anonymize
+        settings:
+          $ref: "#/components/schemas/PrivacySettings"
+    PrivacySettings:
+      type: object
+      required: [entities]
+      properties:
+        entities:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/EntitySettings"
+    EntitySettings:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Entity type to detect (case-insensitive)
+          enum: [EMAIL, CPF_NUMBER, CNPJ_NUMBER, IP_ADDRESS, IP, IPV4, IPV6, CREDIT_CARD, PHONE, LINK, URL, SSN, ADDRESS, BANK_INFO, UUID]
+        exceptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExceptionSettings"
+        redaction:
+          $ref: "#/components/schemas/RedactionSettings"
+        mask:
+          $ref: "#/components/schemas/MaskSettings"
+    RedactionSettings:
+      type: object
+      required: [replacement]
+      properties:
+        replacement:
+          type: string
+          description: Placeholder string that replaces the detected value
+    MaskSettings:
+      type: object
+      required: [replacement, maxLength]
+      properties:
+        replacement:
+          type: string
+          description: Character used for masking
+        maxLength:
+          type: integer
+          minimum: 1
+          description: Number of characters to mask
+    ExceptionSettings:
+      type: object
+      required: [reason, match]
+      properties:
+        reason:
+          type: string
+          description: Explanation of why this value should not be anonymized
+        match:
+          $ref: "#/components/schemas/MatchSettings"
+    MatchSettings:
+      type: object
+      required: [operator, pattern]
+      properties:
+        operator:
+          type: string
+          enum: [equal, ignoreCaseEqual, startsWith, endsWith]
+          description: Matching strategy
+        pattern:
+          type: string
+          description: Value to match against
+    AnonymizeResponse:
+      type: object
+      properties:
+        anonymized_text:
+          type: string
+          description: The input text after anonymization
+        detected_entities:
+          type: array
+          items:
+            type: string
+          description: Entity types found in the text (sorted alphabetically)
+        anonymized_entities:
+          type: array
+          items:
+            type: string
+          description: Entity types that were anonymized (sorted alphabetically)
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+        error:
+          type: string
+          description: Human-readable error message
