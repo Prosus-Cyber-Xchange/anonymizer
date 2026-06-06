@@ -12,11 +12,10 @@ tasks:
 
   run:
     desc: Execute application locally.
-    deps: [redis:up]
     cmds:
+      - task: redis:down
+      - task: redis:up
       - go run cmd/server/main.go
-    cleanup:
-      - task redis:down
 
   build:
     desc: Build application binary.
@@ -95,6 +94,7 @@ tasks:
             docker run -d --name anonymizer-redis -p 6379:6379 redis:7-alpine
           fi
         fi
+      - sleep 5
 
   redis:down:
     desc: Stop and remove the Redis container.
