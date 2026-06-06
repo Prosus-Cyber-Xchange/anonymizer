@@ -1,4 +1,4 @@
-# Anonymizer Service
+# Anonymizer
 
 A REST API service and embeddable Go library that detects and anonymizes personally identifiable information (PII) using the [leakspok](https://github.com/Prosus-Cyber-Xchange/leakspok) library.
 
