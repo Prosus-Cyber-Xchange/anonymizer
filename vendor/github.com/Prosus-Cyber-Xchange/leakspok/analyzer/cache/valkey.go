@@ -9,12 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/eko/gocache/lib/v4/store"
 	"github.com/Prosus-Cyber-Xchange/leakspok/pattern"
 	"github.com/valkey-io/valkey-go"
 )
 
-// ValkeyRuleMatchingCache caches rule matching results using valkey-go.
+// RuleMatchingCache caches rule matching results using valkey-go.
 //
 // It benefits from two valkey-go features with zero extra code:
 //   - Auto pipelining: concurrent Do/DoCache calls from different goroutines are
@@ -23,30 +22,24 @@ import (
 //     server pushes invalidation messages when keys change, eliminating round-trips
 //     for hot keys on subsequent requests.
 //
-// Client-side caching is disabled when MemoryOptions.CacheSize == -1.
-type ValkeyRuleMatchingCache struct {
+// Client-side caching is disabled when RuleMatchingCacheOptions.DisableInMemoryCache is true.
+type RuleMatchingCache struct {
 	client     valkey.Client
 	cacheTTL   time.Duration
-	disableCSC bool // disable client-side caching
+	disableCSC bool
 	keyBufPool sync.Pool
 }
 
-// NewValkeyRuleMatchingCache creates a ValkeyRuleMatchingCache from the provided options.
-// Uses RedisOptions for connection configuration and MemoryOptions.CacheSize == -1
-// to disable client-side caching.
-func NewValkeyRuleMatchingCache(ctx context.Context, options RuleMatchingCacheOptions) (*ValkeyRuleMatchingCache, error) {
+// NewRuleMatchingCache creates a RuleMatchingCache from the provided options.
+func NewRuleMatchingCache(ctx context.Context, options RuleMatchingCacheOptions) (*RuleMatchingCache, error) {
 	r := options.Redis
-	m := options.Memory
 
-	disableCSC := m.CacheSize == -1
-
-	//todo: find a way to use cache size to limit client-side cache memory usage.
 	opt := valkey.ClientOption{
 		InitAddress:       strings.Split(r.Addr, ","),
 		Username:          r.Username,
 		Password:          r.Password,
 		ForceSingleClient: r.DisableClusterMode,
-		DisableCache:      disableCSC,
+		DisableCache:      options.DisableInMemoryCache,
 		Dialer: net.Dialer{
 			Timeout: r.DialTimeout,
 		},
@@ -79,31 +72,31 @@ func NewValkeyRuleMatchingCache(ctx context.Context, options RuleMatchingCacheOp
 		}
 	}
 
-	return &ValkeyRuleMatchingCache{
+	return &RuleMatchingCache{
 		client:     client,
 		cacheTTL:   options.CacheTTL,
-		disableCSC: disableCSC,
+		disableCSC: options.DisableInMemoryCache,
 	}, nil
 }
 
 // GetMatch retrieves a cached rule matching result.
 // Uses DoCache for client-side caching unless disabled; falls back to Do otherwise.
 // Auto pipelining coalesces concurrent calls into a single network round-trip.
-func (v *ValkeyRuleMatchingCache) GetMatch(ctx context.Context, entity pattern.Entity, data []byte) (bool, error) {
-	key := v.key(entity, data)
+func (r *RuleMatchingCache) GetMatch(ctx context.Context, entity pattern.Entity, data []byte) (bool, error) {
+	key := r.key(entity, data)
 
 	var result valkey.ValkeyResult
 
-	if v.disableCSC || v.cacheTTL == 0 {
-		result = v.client.Do(ctx, v.client.B().Get().Key(key).Build())
+	if r.disableCSC || r.cacheTTL == 0 {
+		result = r.client.Do(ctx, r.client.B().Get().Key(key).Build())
 	} else {
-		result = v.client.DoCache(ctx, v.client.B().Get().Key(key).Cache(), v.cacheTTL)
+		result = r.client.DoCache(ctx, r.client.B().Get().Key(key).Cache(), r.cacheTTL)
 	}
 
 	val, err := result.ToString()
 	if err != nil {
 		if valkey.IsValkeyNil(err) {
-			return false, store.NotFound{}
+			return false, ErrCacheNotFound
 		}
 
 		return false, err
@@ -114,8 +107,8 @@ func (v *ValkeyRuleMatchingCache) GetMatch(ctx context.Context, entity pattern.E
 
 // SaveMatch caches a rule matching result.
 // Auto pipelining coalesces concurrent writes into a single network round-trip.
-func (v *ValkeyRuleMatchingCache) SaveMatch(ctx context.Context, entity pattern.Entity, data []byte, matched bool) error {
-	key := v.key(entity, data)
+func (r *RuleMatchingCache) SaveMatch(ctx context.Context, entity pattern.Entity, data []byte, matched bool) error {
+	key := r.key(entity, data)
 
 	val := "0"
 	if matched {
@@ -123,22 +116,22 @@ func (v *ValkeyRuleMatchingCache) SaveMatch(ctx context.Context, entity pattern.
 	}
 
 	var cmd valkey.Completed
-	if v.cacheTTL > 0 {
-		cmd = v.client.B().Set().Key(key).Value(val).Px(v.cacheTTL).Build()
+	if r.cacheTTL > 0 {
+		cmd = r.client.B().Set().Key(key).Value(val).Px(r.cacheTTL).Build()
 	} else {
-		cmd = v.client.B().Set().Key(key).Value(val).Build()
+		cmd = r.client.B().Set().Key(key).Value(val).Build()
 	}
 
-	return v.client.Do(ctx, cmd).Error()
+	return r.client.Do(ctx, cmd).Error()
 }
 
 // key generates a cache key in "entity:data" format, reusing a sync.Pool buffer.
-func (v *ValkeyRuleMatchingCache) key(x pattern.Entity, y []byte) string {
+func (r *RuleMatchingCache) key(x pattern.Entity, y []byte) string {
 	n := len(x) + 1 + len(y)
 
 	var buf []byte
 
-	if raw := v.keyBufPool.Get(); raw != nil {
+	if raw := r.keyBufPool.Get(); raw != nil {
 		//nolint:forcetypeassert,errcheck // sync.Pool stores []byte, type assertion is safe
 		buf = raw.([]byte)
 	}
@@ -155,7 +148,7 @@ func (v *ValkeyRuleMatchingCache) key(x pattern.Entity, y []byte) string {
 	s := string(buf)
 
 	//nolint:staticcheck // SA6002: using non-pointer intentionally for buffer reuse
-	v.keyBufPool.Put(buf)
+	r.keyBufPool.Put(buf)
 
 	return s
 }
