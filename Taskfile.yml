@@ -1,0 +1,80 @@
+version: "3"
+
+set: [pipefail]
+
+tasks:
+  help:
+    desc: Display this help.
+    cmds:
+      - task -l
+
+  run:
+    desc: Execute application locally.
+    cmds:
+      - go run cmd/server/main.go
+
+  build:
+    desc: Build application binary.
+    sources:
+      - "cmd/**/*.go"
+      - "internal/**/*.go"
+    env:
+      CGO_ENABLED: 0
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+      - go build -o app -ldflags="-s -w -extldflags -static" cmd/server/main.go
+
+  test:
+    desc: Run tests on project.
+    cmds:
+      - |
+        if [ ! -z "${CI_JOB_ID}" ]; then 
+          go test -run . ./... -race -count=1 -coverprofile coverage.out -json | tee go-test-report.json
+        else 
+          go test -race -count=1 -cover ./...
+        fi
+
+  test/unit:
+    cmds:
+      - |
+        if [ ! -z "${CI_JOB_ID}" ]; then 
+          go test -short -run . ./... -race -count=1 -coverprofile coverage.out
+        else 
+          go test -short -race -count=1 -cover ./... 
+        fi
+
+  test/e2e:
+    cmds:
+      - |
+        if [ ! -z "${CI_JOB_ID}" ]; then 
+          go test -run . ./e2e/... -race -count=1 -coverprofile coverage.out 
+        else 
+          go test -race -count=1 -cover ./e2e/... 
+        fi
+
+  tag:
+    desc: Create git tag based on application version.
+    cmds:
+      - git tag -a -m "v$(VERSION)" v$(VERSION)
+
+  gen:
+    cmds:
+      - go generate ./...
+
+  format:
+    desc: Run formatters on project.
+    cmds:
+      - go fmt ./...
+      - go run golang.org/x/tools/cmd/goimports@latest -w .
+
+  lint:
+    desc: Lint code
+    cmds:
+      - go run github.com/golangci/golangci-lint/cmd/golangci-lint run -c .golangci.yml
+
+  vendor:
+    desc: Vendor dependencies.
+    cmds:
+      - go mod tidy
+      - go mod vendor
