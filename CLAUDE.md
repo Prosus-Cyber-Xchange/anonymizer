@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a REST API service and embeddable Go library that anonymizes PII (Personally Identifiable Information) using the [leakspok](https://github.com/New-Horizons-Team/leakspok) library. It is the **Community Edition (CE)** — a clean, open-source version without internal iFood platform integrations.
+This is a REST API service and embeddable Go library that anonymizes PII (Personally Identifiable Information) using the [leakspok](https://github.com/Prosus-Cyber-Xchange/leakspok) library. It is the **Community Edition (CE)** — a clean, open-source version without internal iFood platform integrations.
 
 ## Common Commands
 

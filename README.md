@@ -1,6 +1,6 @@
 # Anonymizer Service — Community Edition
 
-A REST API service and embeddable Go library that detects and anonymizes personally identifiable information (PII) using the [leakspok](https://github.com/New-Horizons-Team/leakspok) library.
+A REST API service and embeddable Go library that detects and anonymizes personally identifiable information (PII) using the [leakspok](https://github.com/Prosus-Cyber-Xchange/leakspok) library.
 
 ## Features
 
@@ -236,7 +236,7 @@ task test:e2e
 
 ## Dependencies
 
-- [leakspok](https://github.com/New-Horizons-Team/leakspok) — PII detection and anonymization
+- [leakspok](https://github.com/Prosus-Cyber-Xchange/leakspok) — PII detection and anonymization
 - [chi](https://github.com/go-chi/chi) — HTTP router
 - [valkey-go](https://github.com/valkey-io/valkey-go) — Valkey/Redis client with server-assisted client-side caching
 - [prometheus/client_golang](https://github.com/prometheus/client_golang) — Metrics
