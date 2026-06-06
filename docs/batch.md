@@ -76,32 +76,11 @@ Both entity lists are sorted alphabetically and will be empty arrays (`[]`) when
 
 ## Error Responses
 
-| HTTP Status | Error Code | Cause |
-|---|---|---|
-| `400 Bad Request` | `INVALID_REQUEST` | Request body is not valid JSON |
-| `400 Bad Request` | `BATCH_SIZE_EXCEEDED` | Number of items exceeds `MAX_BATCH_SIZE` |
-| `400 Bad Request` | `INVALID_SETTINGS` | An item's settings failed validation (e.g. missing entity name, no redaction/mask defined, invalid exception operator) |
-| `500 Internal Server Error` | `ANONYMIZATION_FAILED` | Unexpected failure while anonymizing an item |
+For the complete error code reference, see [errors.md](./errors.md).
 
 ## Supported Entities
 
-| Name | Description |
-|---|---|
-| `EMAIL` | Email addresses |
-| `CPF_NUMBER` | Brazilian individual taxpayer registry (CPF) numbers |
-| `CNPJ_NUMBER` | Brazilian company registry (CNPJ) numbers |
-| `IP_ADDRESS` / `IP` | IPv4 and IPv6 addresses |
-| `IPV4` | IPv4 addresses only |
-| `IPV6` | IPv6 addresses only |
-| `CREDIT_CARD` | Credit card numbers |
-| `PHONE` | Phone numbers |
-| `LINK` / `URL` | URLs and hyperlinks |
-| `SSN` | US Social Security Numbers |
-| `ADDRESS` | Street addresses |
-| `BANK_INFO` | Banking information (IBAN) |
-| `UUID` | UUIDs and GUIDs |
-
-Entity names are case-insensitive in the request (`email` and `EMAIL` are both accepted).
+For the full entity reference, see [entities.md](./entities.md).
 
 ## Exceptions
 
