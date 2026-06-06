@@ -1,0 +1,12 @@
+entities:
+  - name: EMAIL
+    redaction:
+      replacement: "<EMAIL_REDACTED>"
+  - name: CPF_NUMBER
+    redaction:
+      replacement: "<CPF_REDACTED>"
+    exceptions:
+      - reason: "test CPF"
+        match:
+          operator: equal
+          pattern: "<CPF_REDACTED>"

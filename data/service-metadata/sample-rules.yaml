@@ -1,0 +1,56 @@
+metadata:
+  data-domain-layer-slug: ads-plat
+
+limits:
+- kind: "text"
+  provider: "openai"
+  model: "gpt-4o-mini"
+  rpm: 10
+  tpm: 1000
+- kind: "text"
+  provider: "openai"
+  model: "gpt-4o"
+  rpm: 100
+  tpm: 10000
+
+privacy:
+  entities:
+  - name: "EMAIL"
+    exceptions:
+    - reason: "Evita anonimizar email de suporte. Contexto na thread: https://ifood.slack.com/archives/C12ABCDEFG/p123456789"
+      match:
+        operator: equal
+        pattern: "suporte@ifood.com.br"
+    - reason: "Emails de noreply são públicos"
+      match:
+        operator: startsWith
+        pattern: "noreply@"
+    redaction:
+      replacement: "<EMAIL_REDACTED>"
+
+  - name: "CPF_NUMBER"
+    exceptions:
+    - reason: "CPF de teste usado em ambiente de desenvolvimento"
+      match:
+        operator: equal
+        pattern: "111.111.111-11"
+    redaction:
+      replacement: "<CPF_REDACTED>"
+
+  - name: "CNPJ_NUMBER"
+    exceptions:
+    - reason: "Evita anonimizar CNPJ de teste. Esse CNPJ não existe e é usado para verificar que a operação foi bem sucedida. Contexto na thread: https://ifood.slack.com/archives/C12ABCDEFG/p123456789"
+      match:
+        operator: equal
+        pattern: "44.129.376/0001-76"
+    redaction:
+      replacement: "<CNPJ_REDACTED>"
+
+  - name: "IP_ADDRESS"
+    redaction:
+      replacement: "<IP_REDACTED>"
+
+  - name: "CREDIT_CARD"
+    mask:
+      replacement: "*"
+      maxLength: 4

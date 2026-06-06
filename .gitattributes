@@ -1,0 +1,4 @@
+# Exclude diff from merge requests
+
+/vendor/* -diff
+/go.sum -diff
