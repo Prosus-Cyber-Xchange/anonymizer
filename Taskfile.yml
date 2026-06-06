@@ -38,7 +38,7 @@ tasks:
           go test -race -count=1 -cover ./...
         fi
 
-  test/unit:
+  test:unit:
     cmds:
       - |
         if [ ! -z "${CI_JOB_ID}" ]; then 
@@ -47,7 +47,7 @@ tasks:
           go test -short -race -count=1 -cover ./... 
         fi
 
-  test/e2e:
+  test:e2e:
     cmds:
       - |
         if [ ! -z "${CI_JOB_ID}" ]; then 
