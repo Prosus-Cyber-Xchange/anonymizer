@@ -68,7 +68,7 @@ if err != nil {
     return
 }
 
-ctx := anonymizer.WithRules(r.Context(), rules)
+ctx := server.WithRules(r.Context(), rules)
 next.ServeHTTP(w, r.WithContext(ctx))
 ```
 
@@ -114,8 +114,8 @@ This example demonstrates a plugin that reads a service name from a request head
 package myplugin
 
 import (
-    "anonymizer-service-v2/pkg/anonymizer"
-    "anonymizer-service-v2/pkg/privacy"
+    "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
+    "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 )
 
 type ServiceRulesPlugin struct {
@@ -178,14 +178,14 @@ func (p *ServiceRulesPlugin) Middleware(services anonymizer.CoreServices) func(h
             }
 
             // Inject rules into context and pass to next handler
-            ctx := anonymizer.WithRules(r.Context(), rules)
+            ctx := server.WithRules(r.Context(), rules)
             next.ServeHTTP(w, r.WithContext(ctx))
         })
     }
 }
 
 // Verify interface compliance at compile time
-var _ anonymizer.MiddlewareRegistrar = (*ServiceRulesPlugin)(nil)
+var _ server.MiddlewareRegistrar = (*ServiceRulesPlugin)(nil)
 ```
 
 **Step 3: Register the plugin when building the service**
@@ -197,9 +197,9 @@ func main() {
 
     plugin := myplugin.NewServiceRulesPlugin()
 
-    app, err := anonymizer.NewFromConfig(ctx,
-        anonymizer.WithLogger(logger),
-        anonymizer.WithPlugin(plugin),
+    app, err := server.NewFromConfig(ctx,
+        server.WithLogger(logger),
+        server.WithPlugin(plugin),
     )
     if err != nil {
         log.Fatal(err)
@@ -229,7 +229,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
 
-    "anonymizer-service-v2/pkg/anonymizer"
+    "github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
     "myplugin"
 )
 
@@ -238,8 +238,8 @@ func TestServiceRulesPlugin_InjectsRulesForKnownService(t *testing.T) {
     plugin := myplugin.NewServiceRulesPlugin()
 
     // Build the service with the plugin
-    app, err := anonymizer.NewFromConfig(context.Background(),
-        anonymizer.WithPlugin(plugin),
+    app, err := server.NewFromConfig(context.Background(),
+        server.WithPlugin(plugin),
     )
     require.NoError(t, err)
 
@@ -263,8 +263,8 @@ func TestServiceRulesPlugin_InjectsRulesForKnownService(t *testing.T) {
 
 func TestServiceRulesPlugin_IgnoresUnknownService(t *testing.T) {
     plugin := myplugin.NewServiceRulesPlugin()
-    app, err := anonymizer.NewFromConfig(context.Background(),
-        anonymizer.WithPlugin(plugin),
+    app, err := server.NewFromConfig(context.Background(),
+        server.WithPlugin(plugin),
     )
     require.NoError(t, err)
 
@@ -285,8 +285,8 @@ func TestServiceRulesPlugin_IgnoresUnknownService(t *testing.T) {
 
 func TestServiceRulesPlugin_HeadersOverrideContext(t *testing.T) {
     plugin := myplugin.NewServiceRulesPlugin()
-    app, err := anonymizer.NewFromConfig(context.Background(),
-        anonymizer.WithPlugin(plugin),
+    app, err := server.NewFromConfig(context.Background(),
+        server.WithPlugin(plugin),
     )
     require.NoError(t, err)
 
@@ -345,7 +345,7 @@ curl -X POST http://localhost:8080/api/v1/anonymize \
 
 ## Best Practices
 
-1. **Verify Interface Compliance at Compile Time**: Use `var _ anonymizer.MiddlewareRegistrar = (*YourPlugin)(nil)` to catch mismatches early
+1. **Verify Interface Compliance at Compile Time**: Use `var _ server.MiddlewareRegistrar = (*YourPlugin)(nil)` to catch mismatches early
 2. **Handle Errors Gracefully**: If rule building fails, log the error and pass through (don't break the chain)
 3. **Log Context**: Use structured logging with `slog.String()`, `slog.Int()`, etc. to provide context
 4. **Cache When Possible**: Build rules once in the plugin constructor if they don't change per request
@@ -359,3 +359,4 @@ curl -X POST http://localhost:8080/api/v1/anonymize \
 - [`pkg/anonymizer/context.go`](../pkg/anonymizer/context.go) - Context helpers
 - [`examples/plugin/`](../examples/plugin/) - Complete working example
 - [`pkg/privacy/rule_builder.go`](../pkg/privacy/rule_builder.go) - PrivacySettings and rule building
+- [`docs/architecture.md`](../docs/architecture.md) - Service architecture and plugin hook points
