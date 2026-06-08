@@ -190,7 +190,7 @@ github.com/Microsoft/go-winio/internal/fs
 github.com/Microsoft/go-winio/internal/socket
 github.com/Microsoft/go-winio/internal/stringbuffer
 github.com/Microsoft/go-winio/pkg/guid
-# github.com/Prosus-Cyber-Xchange/leakspok v0.0.0 => ../leakspok-ce
+# github.com/Prosus-Cyber-Xchange/leakspok v0.0.1
 ## explicit; go 1.25.0
 github.com/Prosus-Cyber-Xchange/leakspok/analyzer
 github.com/Prosus-Cyber-Xchange/leakspok/analyzer/cache
@@ -656,4 +656,3 @@ gopkg.in/ini.v1
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# github.com/Prosus-Cyber-Xchange/leakspok => ../leakspok-ce
