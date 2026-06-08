@@ -4,11 +4,6 @@ RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-COPY vendor/ vendor/
-
-RUN go mod download
-
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=vendor -ldflags="-s -w" -o /anonymizer ./cmd/server
