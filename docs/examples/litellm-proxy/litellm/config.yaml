@@ -1,0 +1,11 @@
+model_list:
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+
+litellm_settings:
+  callbacks: custom_callbacks.proxy_handler_instance
+
+general_settings:
+  master_key: sk-local-demo-key
