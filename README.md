@@ -144,6 +144,17 @@ task test:e2e
 - [caarlos0/env](https://github.com/caarlos0/env) — Environment variable parsing
 - [testcontainers-go](https://github.com/testcontainers/testcontainers-go) — E2E test infrastructure
 
+## Contact
+
+This project is maintained by iFood's AI Security team:
+
+| Name | Email |
+|------|-------|
+| Caio Cavalcante | caio.cavalcante@ifood.com.br |
+| Emanuel Valente | emanuel.valente@ifood.com.br |
+| José Almas | jose.almas@ifood.com.br |
+| Michelle Mesquita | michelle.mesquita@ifood.com.br |
+
 ## License
 
 [Apache 2.0](LICENSE)
