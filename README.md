@@ -4,6 +4,8 @@ A REST API service and embeddable Go library that detects and anonymizes persona
 
 Built for **high performance** — byte-level processing, buffer pooling, and optional concurrency deliver low-latency anonymization of large text payloads such as AI prompts.
 
+**Documentation site:** [Prosus-Cyber-Xchange.github.io/anonymizer](https://Prosus-Cyber-Xchange.github.io/anonymizer)
+
 ## Features
 
 - **Inline privacy rules** — supply anonymization settings directly in the request body
@@ -19,7 +21,7 @@ Built for **high performance** — byte-level processing, buffer pooling, and op
 
 ## Quick Start
 
-See the [Getting Started Guide](./docs/getting-started.md) for full Docker and manual setup instructions.
+See the [Getting Started Guide](./docs/content/getting-started.md) for full Docker and manual setup instructions.
 
 ```bash
 docker compose up
@@ -28,17 +30,17 @@ curl http://localhost:8080/health
 
 ## Documentation
 
-- [Getting Started](./docs/getting-started.md) — installation, first request, library usage
-- [Entity Reference](./docs/entities.md) — all supported PII types
-- [Redaction Strategies](./docs/redaction.md) — redact and mask configuration
-- [Content Negotiation](./docs/content-negotiation.md) — JSON vs text/plain modes
-- [Error Reference](./docs/errors.md) — complete error code reference
-- [Configuration Reference](./docs/configuration.md) — all environment variables
-- [Architecture](./docs/architecture.md) — design philosophy, component map, request flow
-- [Observability Guide](./docs/observability.md) — metrics, tracing, logging
-- [Deployment Guide](./docs/deployment.md) — Docker, Kubernetes, scaling
-- [Plugin Developer Guide](./docs/plugins.md) — extending the service with custom middleware
-- [API Specification](./docs/openapi.yaml) — OpenAPI 3.1 spec
+- [Getting Started](./docs/content/getting-started.md) — installation, first request, library usage
+- [Entity Reference](./docs/content/entities.md) — all supported PII types
+- [Redaction Strategies](./docs/content/redaction.md) — redact and mask configuration
+- [Content Negotiation](./docs/content/content-negotiation.md) — JSON vs text/plain modes
+- [Error Reference](./docs/content/errors.md) — complete error code reference
+- [Configuration Reference](./docs/content/configuration.md) — all environment variables
+- [Architecture](./docs/content/architecture.md) — design philosophy, component map, request flow
+- [Observability Guide](./docs/content/observability.md) — metrics, tracing, logging
+- [Deployment Guide](./docs/content/deployment.md) — Docker, Kubernetes, scaling
+- [Plugin Developer Guide](./docs/content/plugins.md) — extending the service with custom middleware
+- [API Specification](./docs/content/openapi.yaml) — OpenAPI 3.1 spec
 
 ## API
 
@@ -118,7 +120,7 @@ Register with `WithPlugin`:
 anonymizer, _ := server.NewFromConfig(ctx, server.WithPlugin(&myPlugin{}))
 ```
 
-See the [Plugin Developer Guide](./docs/plugins.md) for a complete walkthrough with examples.
+See the [Plugin Developer Guide](./docs/content/plugins.md) for a complete walkthrough with examples.
 
 ## Testing
 
