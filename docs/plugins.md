@@ -359,4 +359,4 @@ curl -X POST http://localhost:8080/api/v1/anonymize \
 - [`pkg/server/context.go`](../pkg/server/context.go) - Context helpers
 - [`examples/plugin/`](../examples/plugin/) - Complete working example
 - [`pkg/privacy/rule_builder.go`](../pkg/privacy/rule_builder.go) - PrivacySettings and rule building
-- [`docs/architecture.md`](../docs/architecture.md) - Service architecture and plugin hook points
+- [architecture.md](architecture.md) - Service architecture and plugin hook points

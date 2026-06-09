@@ -105,7 +105,7 @@ PII_ENTITIES = [
 ]
 ```
 
-See [entities.md](../entities.md) for the full list of supported entity types.
+See [entities.md](../../entities.md) for the full list of supported entity types.
 
 ### Changing the LLM model
 
