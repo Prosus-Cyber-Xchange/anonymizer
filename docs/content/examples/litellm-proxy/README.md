@@ -2,6 +2,8 @@
 
 This example shows how to configure a [LiteLLM](https://docs.litellm.ai) proxy with a custom middleware that redacts PII (Personally Identifiable Information) before requests reach the LLM.
 
+> Browse the code: [github.com/Prosus-Cyber-Xchange/anonymizer](https://github.com/Prosus-Cyber-Xchange/anonymizer/tree/main/docs/content/examples/litellm-proxy/)
+
 > **Files in this folder:**
 >
 > | File | Purpose |

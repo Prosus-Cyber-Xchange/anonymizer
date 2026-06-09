@@ -2,6 +2,8 @@
 
 This example demonstrates how to embed the Anonymizer as a Go library and register a plugin that injects per-service privacy rules based on an HTTP header.
 
+> Browse the code: [github.com/Prosus-Cyber-Xchange/anonymizer](https://github.com/Prosus-Cyber-Xchange/anonymizer/tree/main/docs/content/examples/plugin/)
+
 > **Files in this folder:**
 >
 > | File | Purpose |
