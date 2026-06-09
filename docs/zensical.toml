@@ -9,13 +9,12 @@ nav = [
   "configuration.md",
   "entities.md",
   "redaction.md",
-  "anonymize.md",
-  "batch.md",
   "content-negotiation.md",
   "plugins.md",
   "deployment.md",
   "observability.md",
   "errors.md",
+  { "API Reference" = ["anonymize.md", "batch.md"] },
   { Examples = ["examples/litellm-proxy/README.md", "examples/plugin/README.md"] },
 ]
 
