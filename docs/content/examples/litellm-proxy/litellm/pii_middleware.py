@@ -1,6 +1,5 @@
 import logging
 import re
-import uuid
 from typing import Any, Literal, Optional
 
 import httpx
@@ -25,36 +24,11 @@ logger = logging.getLogger(__name__)
 class PiiMiddleware(CustomLogger):
     def __init__(self):
         self.client: Optional[httpx.AsyncClient] = None
-        self._store: dict[str, dict[str, str]] = {}
 
     def _get_client(self) -> httpx.AsyncClient:
         if self.client is None:
             self.client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
         return self.client
-
-    @staticmethod
-    def _build_mapping(original: str, anonymized: str) -> dict[str, str]:
-        mapping: dict[str, str] = {}
-        o = a = 0
-
-        while a < len(anonymized):
-            if o < len(original) and anonymized[a] == original[o]:
-                o += 1
-                a += 1
-            elif anonymized[a] == "[":
-                end = anonymized.index("]", a) + 1
-                placeholder = anonymized[a:end]
-                a = end
-                orig_start = o
-                while o < len(original) and a < len(anonymized):
-                    if original[o] == anonymized[a]:
-                        break
-                    o += 1
-                mapping[placeholder] = original[orig_start:o]
-            else:
-                a += 1
-
-        return mapping
 
     async def async_pre_call_hook(
         self,
@@ -78,7 +52,6 @@ class PiiMiddleware(CustomLogger):
             return data
 
         client = self._get_client()
-        request_id = str(uuid.uuid4())
 
         for i, msg in enumerate(messages):
             content = msg.get("content")
@@ -107,37 +80,9 @@ class PiiMiddleware(CustomLogger):
             if not detected or anonymized == content:
                 continue
 
-            mapping = self._build_mapping(content, anonymized)
-            if mapping:
-                self._store[request_id] = mapping
-                msg["content"] = anonymized
+            msg["content"] = anonymized
 
-        data["_pii_request_id"] = request_id
         return data
-
-    async def async_post_call_success_hook(
-        self,
-        data: dict,
-        user_api_key_dict: UserAPIKeyAuth,
-        response: Any,
-    ) -> None:
-        request_id = data.get("_pii_request_id")
-        if not request_id or request_id not in self._store:
-            return
-
-        replacements = self._store.pop(request_id)
-
-        choices = getattr(response, "choices", [])
-        for choice in choices:
-            message = getattr(choice, "message", None)
-            if message is None:
-                continue
-            resp_content = getattr(message, "content", None)
-            if not isinstance(resp_content, str):
-                continue
-            for placeholder, original in replacements.items():
-                resp_content = resp_content.replace(placeholder, original)
-            message.content = resp_content
 
 
 proxy_handler_instance = PiiMiddleware()

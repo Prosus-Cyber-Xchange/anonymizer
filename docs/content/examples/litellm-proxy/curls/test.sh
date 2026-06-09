@@ -80,9 +80,9 @@ run_test \
   "prompt" \
   "bob@example.com"
 
-# ---- Test 2: De-anonymization restores PII in LLM response ----
+# ---- Test 2: LLM never sees PII, response keeps placeholders ----
 run_test \
-  "PII restored in LLM response (de-anonymization)" \
+  "LLM response contains placeholder, not original PII" \
   '{
     "model": "gpt-4o",
     "max_tokens": 60,
@@ -90,8 +90,8 @@ run_test \
       {"role": "user", "content": "Repeat exactly: My contact is alice@foo.com"}
     ]
   }' \
-  "alice@foo.com" \
-  "\\[EMAIL\\]"
+  "\\[EMAIL\\]" \
+  "alice@foo.com"
 
 # ---- Test 3: No PII passes through unchanged ----
 run_test \

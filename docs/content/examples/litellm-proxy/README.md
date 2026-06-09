@@ -1,12 +1,12 @@
 # LiteLLM Proxy + Anonymizer PII Redaction
 
-This example shows how to configure a [LiteLLM](https://docs.litellm.ai) proxy with a custom middleware that redacts PII (Personally Identifiable Information) before sending requests to an LLM, and restores the original values in the response.
+This example shows how to configure a [LiteLLM](https://docs.litellm.ai) proxy with a custom middleware that redacts PII (Personally Identifiable Information) before requests reach the LLM.
 
 > **Files in this folder:**
 >
 > | File | Purpose |
 > |------|---------|
-> | `litellm/pii_middleware.py` | LiteLLM callback — anonymizes before call, restores after response |
+> | `litellm/pii_middleware.py` | LiteLLM callback — anonymizes messages before they reach the LLM |
 > | `litellm/config.yaml` | LiteLLM proxy configuration (model, callbacks, keys) |
 > | `litellm/Dockerfile` | Container image for the LiteLLM proxy with custom middleware |
 > | `litellm/requirements.txt` | Python dependencies (`httpx`) |
@@ -31,11 +31,11 @@ User curl              LiteLLM Proxy          Anonymizer         OpenAI API
   │                        │  "my email is [EMAIL]"                   │
   │                        │◄─ "I see your email is [EMAIL]"──────────│
   │                        │                      │                   │
-  │                        ├─async_post_call_success_hook              │
-  │                        │  [EMAIL] → bob@example.com               │
   │◄─ "I see your email    │                      │                   │
-  │    is bob@example.com"  │                      │                   │
+  │    is [EMAIL]"          │                      │                   │
 ```
+
+The LLM never sees the original PII — it only sees the placeholder values.
 
 ## Step-by-step walkthrough
 
@@ -99,21 +99,21 @@ curl -s http://localhost:4000/chat/completions \
 
 **Verifies**: The LLM response does NOT contain `bob@example.com` — it was redacted before reaching the model.
 
-#### Test 2: De-anonymization restores PII
+#### Test 2: LLM sees only placeholders
 
-The LLM is asked to echo the user's text. The response comes back with placeholders like `[EMAIL]`. The middleware swaps them back to the original values before returning to the caller.
+The LLM is asked to echo the user's text. The response comes back with placeholders like `[EMAIL]` instead of the original PII.
 
-**Verifies**: The response DOES contain `alice@foo.com` (not `[EMAIL]`).
+**Verifies**: The response contains `[EMAIL]` (not `alice@foo.com`) — confirming the LLM never received the original value.
 
 #### Test 3: Benign text passes through
 
-A request with no PII flows through untouched — no anonymizer call, no mapping, no de-anonymization.
+A request with no PII flows through untouched — no anonymizer call, no changes.
 
 **Verifies**: The response contains normal text and no errors occur.
 
 ### Step 5 — Send your own requests
 
-Once tests pass, you can call the proxy directly as a drop-in replacement for the OpenAI API:
+Once tests pass, you can call the proxy as a drop-in replacement for the OpenAI API:
 
 ```bash
 curl -s http://localhost:4000/chat/completions \
@@ -125,7 +125,7 @@ curl -s http://localhost:4000/chat/completions \
   }' | python3 -c "import sys,json; print(json.load(sys.stdin)['choices'][0]['message']['content'])"
 ```
 
-The LLM will see the anonymized version (`Contact: [EMAIL], CPF [CPF]`), but your response will have the original values restored.
+The LLM will see the anonymized version (`Contact: [EMAIL], CPF [CPF]`) and respond accordingly. The response preserves the placeholders — PII never leaves the proxy.
 
 ### Step 6 — Stop the services
 
@@ -135,22 +135,12 @@ docker compose down
 
 ## How the middleware works
 
-The middleware is a LiteLLM [Custom Callback](https://docs.litellm.ai/docs/proxy/call_hooks) implementing two hooks:
-
-### `async_pre_call_hook` — before the LLM call
+The middleware is a LiteLLM [Custom Callback](https://docs.litellm.ai/docs/proxy/call_hooks) that implements `async_pre_call_hook`:
 
 1. Loops over every `message` in the chat completion request.
 2. For each message, calls `POST /api/v1/anonymize` with settings for EMAIL, PHONE, CPF_NUMBER, CREDIT_CARD, and IP_ADDRESS.
-3. Uses Python's `difflib.SequenceMatcher` to find which parts of the original text were replaced (the placeholder strings like `[EMAIL]`) and their original values.
-4. Stores the mapping (`"[EMAIL]" → "bob@example.com"`) keyed by a random request ID.
-5. Replaces the message content with the anonymized version before LiteLLM forwards it to the model.
-
-### `async_post_call_success_hook` — after the LLM call
-
-1. Looks up the stored mapping by the request ID.
-2. Scans the LLM's response for any placeholder strings.
-3. Replaces each with the original PII value.
-4. The end user sees the response with PII restored while the LLM never saw it.
+3. The anonymizer returns `anonymized_text` with PII replaced by placeholder strings (e.g., `bob@example.com` → `[EMAIL]`).
+4. Replaces the message content with the anonymized version before LiteLLM forwards it to the model.
 
 ### PII types redacted
 
@@ -174,12 +164,6 @@ PII_ENTITIES = [
     {"name": "SSN",      "redaction": {"replacement": "[SSN]"}},      # added
     {"name": "LINK",     "redaction": {"replacement": "[URL]"}},      # added
 ]
-```
-
-Also update the `PLACEHOLDER_RE` regex at the top of the file so the de-anonymization step can find the new placeholders:
-
-```python
-PLACEHOLDER_RE = re.compile(r"\[(?:EMAIL|PHONE|CPF|CC|IP|SSN|URL)\]")
 ```
 
 See [entities.md](../../entities.md) for every supported entity type.
@@ -232,6 +216,5 @@ Emails matching `*@mycorp.com` will pass through the anonymizer unchanged.
 
 ## Limitations
 
-- **Streaming responses** (`stream: true`) are not supported — de-anonymization only runs in `async_post_call_success_hook`, which fires after the full response. Use non-streaming.
-- **Multiple PII of the same type** in a single message can cause positional ambiguity during de-anonymization when the LLM echoes back placeholders out of order.
+- **Multiple PII of the same type** in a single message are all replaced by the same placeholder — the LLM cannot distinguish between different emails or phone numbers.
 - **Nested or array content** in messages is not handled — only top-level string `content` fields are processed.
