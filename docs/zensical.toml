@@ -16,7 +16,7 @@ nav = [
   "deployment.md",
   "observability.md",
   "errors.md",
-  { Examples = ["examples/litellm-proxy/README.md", "examples/plugin/main.go"] },
+  { Examples = ["examples/litellm-proxy/README.md", "examples/plugin/README.md"] },
 ]
 
 [theme]
