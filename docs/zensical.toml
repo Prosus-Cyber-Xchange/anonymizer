@@ -1,0 +1,33 @@
+[project]
+site_name = "Anonymizer"
+site_url = "https://Prosus-Cyber-Xchange.github.io/anonymizer"
+
+[theme]
+font = { text = "Montserrat", code = "JetBrains Mono" }
+primary = "#EA1D2C"
+accent = "#EA1D2C"
+background = "#F5F0EB"
+
+[theme.logo]
+light = "assets/ifood_logo.png"
+dark  = "assets/ifood_logo_white.png"
+
+[build]
+exclude = ["superpowers/**"]
+
+[nav]
+flat = [
+  "index.md",
+  "getting-started.md",
+  "entities.md",
+  "redaction.md",
+  "batch.md",
+  "anonymize.md",
+  "content-negotiation.md",
+  "architecture.md",
+  "configuration.md",
+  "deployment.md",
+  "plugins.md",
+  "observability.md",
+  "errors.md",
+]
