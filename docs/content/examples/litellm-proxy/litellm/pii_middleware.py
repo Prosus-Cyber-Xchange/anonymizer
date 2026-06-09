@@ -1,8 +1,6 @@
 import logging
 import re
-import difflib
 import uuid
-from collections import defaultdict
 from typing import Any, Literal, Optional
 
 import httpx
@@ -35,17 +33,28 @@ class PiiMiddleware(CustomLogger):
         return self.client
 
     @staticmethod
-    def _extract_replacements(
-        original: str, anonymized: str
-    ) -> dict[str, str]:
-        replacements: dict[str, str] = {}
-        s = difflib.SequenceMatcher(None, original, anonymized)
-        for tag, i1, i2, j1, j2 in s.get_opcodes():
-            if tag == "replace":
-                orig_val = original[i1:i2]
-                anon_val = anonymized[j1:j2]
-                replacements[anon_val] = orig_val
-        return replacements
+    def _build_mapping(original: str, anonymized: str) -> dict[str, str]:
+        mapping: dict[str, str] = {}
+        o = a = 0
+
+        while a < len(anonymized):
+            if o < len(original) and anonymized[a] == original[o]:
+                o += 1
+                a += 1
+            elif anonymized[a] == "[":
+                end = anonymized.index("]", a) + 1
+                placeholder = anonymized[a:end]
+                a = end
+                orig_start = o
+                while o < len(original) and a < len(anonymized):
+                    if original[o] == anonymized[a]:
+                        break
+                    o += 1
+                mapping[placeholder] = original[orig_start:o]
+            else:
+                a += 1
+
+        return mapping
 
     async def async_pre_call_hook(
         self,
@@ -98,9 +107,9 @@ class PiiMiddleware(CustomLogger):
             if not detected or anonymized == content:
                 continue
 
-            replacements = self._extract_replacements(content, anonymized)
-            if replacements:
-                self._store[request_id] = replacements
+            mapping = self._build_mapping(content, anonymized)
+            if mapping:
+                self._store[request_id] = mapping
                 msg["content"] = anonymized
 
         data["_pii_request_id"] = request_id
