@@ -1,6 +1,7 @@
 [project]
 site_name = "Anonymizer"
 site_url = "https://Prosus-Cyber-Xchange.github.io/anonymizer"
+docs_dir = "."
 
 [theme]
 font = { text = "Montserrat", code = "JetBrains Mono" }
@@ -11,9 +12,6 @@ background = "#F5F0EB"
 [theme.logo]
 light = "assets/ifood_logo.png"
 dark  = "assets/ifood_logo_white.png"
-
-[build]
-exclude = ["superpowers/**"]
 
 [nav]
 flat = [
