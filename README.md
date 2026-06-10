@@ -1,5 +1,7 @@
 # Anonymizer
 
+> An [iFood](https://ifood.com.br) open-source project by the AI Security team.
+
 A REST API service and embeddable Go library that detects and anonymizes personally identifiable information (PII) using the [leakspok](https://github.com/Prosus-Cyber-Xchange/leakspok) library.
 
 Built for **high performance** — byte-level processing, buffer pooling, and optional concurrency deliver low-latency anonymization of large text payloads such as AI prompts.
