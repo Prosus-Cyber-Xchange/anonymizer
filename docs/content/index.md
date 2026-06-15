@@ -2,6 +2,8 @@
 
 A high-performance PII anonymization service built for AI prompt workloads.
 
+> An [iFood](https://ifood.com.br) open-source project by the AI Security team.
+
 ## What it does
 
 Detects and anonymizes personally identifiable information (PII) — emails, CPF/CNPJ numbers, IP addresses, credit cards, phone numbers, and more — using byte-level processing for minimal latency and maximal throughput.
