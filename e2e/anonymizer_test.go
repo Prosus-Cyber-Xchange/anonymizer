@@ -15,6 +15,8 @@ func TestAnonymizer(t *testing.T) {
 		t.Skip("skipping e2e tests in short mode")
 	}
 
+	t.Setenv("PRIVACY_CACHE_ENABLED", "false")
+
 	// Wire the application (no external containers needed — no DB/Redis/external APIs)
 	svc, err := server.NewFromConfig(context.Background())
 	if err != nil {
