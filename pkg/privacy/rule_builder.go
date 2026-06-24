@@ -8,6 +8,24 @@ import (
 	"github.com/Prosus-Cyber-Xchange/leakspok/pattern"
 )
 
+// GlobalExceptions defines exception matchers that are injected into every rule.
+var GlobalExceptions = []ExceptionSettings{
+	{
+		Reason: "Git SSH address should not be redacted",
+		Match: MatchSettings{
+			Operator: pattern.MatchOperatorStartsWith,
+			Pattern:  "git@",
+		},
+	},
+	{
+		Reason: "Go module version path should not be redacted",
+		Match: MatchSettings{
+			Operator: pattern.MatchOperatorRegex,
+			Pattern:  `@v\d+\.\d+\.\d+$`,
+		},
+	},
+}
+
 // RuleBuilder converts privacy settings into leakspok analyzer rules
 type RuleBuilder struct {
 	settings PrivacySettings
@@ -43,9 +61,13 @@ func (rb *RuleBuilder) buildRule(ruleIndex int, entityConfig EntitySettings) (an
 		return analyzer.Rule{}, err
 	}
 
-	// Build exceptions
-	exceptions := make([]analyzer.Exception, 0, len(entityConfig.Exceptions))
-	for _, exceptionConfig := range entityConfig.Exceptions {
+	// Build exceptions: prepend global exceptions, then append per-entity exceptions
+	allExceptions := make([]ExceptionSettings, 0, len(GlobalExceptions)+len(entityConfig.Exceptions))
+	allExceptions = append(allExceptions, GlobalExceptions...)
+	allExceptions = append(allExceptions, entityConfig.Exceptions...)
+
+	exceptions := make([]analyzer.Exception, 0, len(allExceptions))
+	for _, exceptionConfig := range allExceptions {
 		exception, err := rb.buildException(exceptionConfig)
 		if err != nil {
 			return analyzer.Rule{}, fmt.Errorf("failed to build exception: %w", err)

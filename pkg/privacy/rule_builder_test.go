@@ -153,9 +153,11 @@ func TestRuleBuilder_Build_WithExceptions(t *testing.T) {
 	require.Len(t, rules, 1)
 
 	rule := rules[0]
-	assert.Len(t, rule.Exceptions, 2)
-	assert.Equal(t, "Public support email", rule.Exceptions[0].Reason)
-	assert.Equal(t, "Noreply emails", rule.Exceptions[1].Reason)
+	expectedExceptions := len(privacy.GlobalExceptions) + len(settings.Entities[0].Exceptions)
+	assert.Len(t, rule.Exceptions, expectedExceptions)
+	assert.Equal(t, privacy.GlobalExceptions[0].Reason, rule.Exceptions[0].Reason)
+	assert.Equal(t, "Public support email", rule.Exceptions[len(privacy.GlobalExceptions)].Reason)
+	assert.Equal(t, "Noreply emails", rule.Exceptions[len(privacy.GlobalExceptions)+1].Reason)
 }
 
 func TestRuleBuilder_Build_AllMatchOperators(t *testing.T) {
@@ -202,9 +204,37 @@ func TestRuleBuilder_Build_AllMatchOperators(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Len(t, rules, 1)
-			require.Len(t, rules[0].Exceptions, 1)
-			assert.NotNil(t, rules[0].Exceptions[0].Matcher)
+			require.Len(t, rules[0].Exceptions, 1+len(privacy.GlobalExceptions))
+			assert.NotNil(t, rules[0].Exceptions[len(privacy.GlobalExceptions)].Matcher)
 		})
+	}
+}
+
+func TestRuleBuilder_Build_GlobalExceptionsInjected(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+	}
+
+	settings := privacy.PrivacySettings{
+		Entities: []privacy.EntitySettings{
+			{
+				Name: "EMAIL",
+				Redaction: &privacy.RedactionSettings{
+					Replacement: "<EMAIL_REDACTED>",
+				},
+			},
+		},
+	}
+
+	builder := privacy.NewRuleBuilder(settings)
+	rules, err := builder.Build()
+
+	require.NoError(t, err)
+	require.Len(t, rules, 1)
+
+	assert.Len(t, rules[0].Exceptions, len(privacy.GlobalExceptions))
+	for i, exc := range rules[0].Exceptions {
+		assert.Equal(t, privacy.GlobalExceptions[i].Reason, exc.Reason)
 	}
 }
 
