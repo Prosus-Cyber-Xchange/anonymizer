@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 	"github.com/Prosus-Cyber-Xchange/leakspok/analyzer"
 	"github.com/uber-go/tally/v4"
 )
@@ -38,5 +39,13 @@ func WithByteAnalyzer(ba analyzer.ByteAnalyzer) Option {
 func WithMetricsScope(scope tally.Scope) Option {
 	return func(a *AnonymizerServer) {
 		a.metricsScope = scope
+	}
+}
+
+// WithGlobalExceptions sets the global exception matchers injected into every rule.
+// If not called, no global exceptions are applied.
+func WithGlobalExceptions(exceptions []privacy.ExceptionSettings) Option {
+	return func(a *AnonymizerServer) {
+		a.globalExceptions = exceptions
 	}
 }

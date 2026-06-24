@@ -8,16 +8,31 @@ import (
 	"github.com/Prosus-Cyber-Xchange/leakspok/pattern"
 )
 
-// RuleBuilder converts privacy settings into leakspok analyzer rules
-type RuleBuilder struct {
-	settings PrivacySettings
+// RuleBuilderOption configures a RuleBuilder during construction.
+type RuleBuilderOption func(*RuleBuilder)
+
+// WithGlobalExceptions sets the global exceptions injected into every rule.
+func WithGlobalExceptions(exceptions []ExceptionSettings) RuleBuilderOption {
+	return func(rb *RuleBuilder) {
+		rb.globalExceptions = exceptions
+	}
 }
 
-// NewRuleBuilder creates a new rule builder with the provided settings
-func NewRuleBuilder(settings PrivacySettings) *RuleBuilder {
-	return &RuleBuilder{
+// RuleBuilder converts privacy settings into leakspok analyzer rules
+type RuleBuilder struct {
+	settings         PrivacySettings
+	globalExceptions []ExceptionSettings
+}
+
+// NewRuleBuilder creates a new rule builder with the provided settings and options.
+func NewRuleBuilder(settings PrivacySettings, opts ...RuleBuilderOption) *RuleBuilder {
+	rb := &RuleBuilder{
 		settings: settings,
 	}
+	for _, opt := range opts {
+		opt(rb)
+	}
+	return rb
 }
 
 // Build converts privacy settings into a slice of leakspok analyzer rules
@@ -43,9 +58,13 @@ func (rb *RuleBuilder) buildRule(ruleIndex int, entityConfig EntitySettings) (an
 		return analyzer.Rule{}, err
 	}
 
-	// Build exceptions
-	exceptions := make([]analyzer.Exception, 0, len(entityConfig.Exceptions))
-	for _, exceptionConfig := range entityConfig.Exceptions {
+	// Build exceptions: prepend global exceptions, then append per-entity exceptions
+	allExceptions := make([]ExceptionSettings, 0, len(rb.globalExceptions)+len(entityConfig.Exceptions))
+	allExceptions = append(allExceptions, rb.globalExceptions...)
+	allExceptions = append(allExceptions, entityConfig.Exceptions...)
+
+	exceptions := make([]analyzer.Exception, 0, len(allExceptions))
+	for _, exceptionConfig := range allExceptions {
 		exception, err := rb.buildException(exceptionConfig)
 		if err != nil {
 			return analyzer.Rule{}, fmt.Errorf("failed to build exception: %w", err)
@@ -137,6 +156,12 @@ func (rb *RuleBuilder) buildExceptionMatcher(match MatchSettings) (analyzer.Matc
 		matchPattern = pattern.StartsWith(patternBytes)
 	case pattern.MatchOperatorEndsWith:
 		matchPattern = pattern.EndsWith(patternBytes)
+	case pattern.MatchOperatorRegex:
+		regexPattern, err := pattern.Regex(match.Pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex pattern %q: %w", match.Pattern, err)
+		}
+		matchPattern = regexPattern
 	default:
 		return nil, fmt.Errorf("unsupported match operator: %s", match.Operator)
 	}

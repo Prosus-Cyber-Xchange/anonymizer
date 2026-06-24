@@ -85,22 +85,23 @@ func validateMaskSettings(mask *privacy.MaskSettings, entityName string) error {
 }
 
 func validateExceptionSettings(exception privacy.ExceptionSettings, entityName string, index int) error {
-	// Exception Match.Operator must be one of the following: equal, ignoreCaseEqual, startsWith, endsWith
 	operator := strings.ToLower(exception.Match.Operator)
 	isOperatorValid := govalidator.IsIn(operator,
 		pattern.MatchOperatorEqual,
 		pattern.MatchOperatorIgnoreCaseEqual,
 		pattern.MatchOperatorStartsWith,
-		pattern.MatchOperatorEndsWith)
+		pattern.MatchOperatorEndsWith,
+		pattern.MatchOperatorRegex)
 
 	if !isOperatorValid {
 		return fmt.Errorf(
-			"entity %q exception at index %d has invalid operator %q (valid: %s, %s, %s, %s)",
+			"entity %q exception at index %d has invalid operator %q (valid: %s, %s, %s, %s, %s)",
 			entityName, index, exception.Match.Operator,
 			pattern.MatchOperatorEqual,
 			pattern.MatchOperatorIgnoreCaseEqual,
 			pattern.MatchOperatorStartsWith,
 			pattern.MatchOperatorEndsWith,
+			pattern.MatchOperatorRegex,
 		)
 	}
 

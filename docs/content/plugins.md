@@ -102,6 +102,29 @@ This design allows:
 - Middleware to provide default rules for a client or service
 - Explicit opt-in requirement (requests must provide rules somehow)
 
+## Global Exceptions
+
+Server-level exceptions that apply to every rule can be configured via `WithGlobalExceptions`. These are prepended to each rule's exception list before any per-entity exceptions, providing a centralized way to exclude known-safe values without modifying rules in every plugin or inline request.
+
+```go
+app, err := server.NewFromConfig(ctx,
+    server.WithPlugin(plugin),
+    server.WithGlobalExceptions([]privacy.ExceptionSettings{
+        {
+            Reason: "Known internal addresses",
+            Match: privacy.MatchSettings{
+                Operator: "endsWith",
+                Pattern:  "@ifood.com.br",
+            },
+        },
+    }),
+)
+```
+
+All [match operators](./anonymize.md#match-operators) are supported (`equal`, `ignoreCaseEqual`, `startsWith`, `endsWith`, `regex`). If not set, no global exceptions are applied.
+
+See [Global Exceptions](./anonymize.md#global-exceptions) for more details.
+
 ## Writing a Middleware Plugin: Step-by-Step
 
 ### Example: Service-Based Rules Plugin

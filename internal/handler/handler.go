@@ -19,31 +19,38 @@ import (
 	"github.com/uber-go/tally/v4"
 )
 
+// HandlerConfig holds the configuration for creating a Handler.
+type HandlerConfig struct {
+	Logger           *slog.Logger
+	PrivacyService   *privacy.Service
+	MaxBatchSize     int
+	GlobalExceptions []privacy.ExceptionSettings
+	Metrics          PrivacyMetrics
+}
+
 // Handler handles HTTP requests for the anonymizer API
 type Handler struct {
-	logger         *slog.Logger
-	privacyService *privacy.Service
-	bufferPool     *BufferPool
-	metrics        PrivacyMetrics
-	maxBatchSize   int
+	logger           *slog.Logger
+	privacyService   *privacy.Service
+	bufferPool       *BufferPool
+	metrics          PrivacyMetrics
+	maxBatchSize     int
+	globalExceptions []privacy.ExceptionSettings
 }
 
-// NewHandler creates a new API handler
-func NewHandler(logger *slog.Logger, privacyService *privacy.Service, maxBatchSize int) *Handler {
-	// Use NoopScope for default metrics (no-op implementation)
-	scope := tally.NoopScope
-	metrics := PrivacyMetrics{scope: scope}
-	return NewHandlerWithMetrics(logger, privacyService, maxBatchSize, metrics)
-}
-
-// NewHandlerWithMetrics creates a new API handler with custom metrics
-func NewHandlerWithMetrics(logger *slog.Logger, privacyService *privacy.Service, maxBatchSize int, metrics PrivacyMetrics) *Handler {
+// NewHandler creates a new API handler from the given configuration.
+// If Metrics is zero-valued, a noop metrics scope is used.
+func NewHandler(cfg HandlerConfig) *Handler {
+	if cfg.Metrics.scope == nil {
+		cfg.Metrics = PrivacyMetrics{scope: tally.NoopScope}
+	}
 	return &Handler{
-		logger:         logger,
-		privacyService: privacyService,
-		bufferPool:     NewBufferPool(),
-		metrics:        metrics,
-		maxBatchSize:   maxBatchSize,
+		logger:           cfg.Logger,
+		privacyService:   cfg.PrivacyService,
+		bufferPool:       NewBufferPool(),
+		metrics:          cfg.Metrics,
+		maxBatchSize:     cfg.MaxBatchSize,
+		globalExceptions: cfg.GlobalExceptions,
 	}
 }
 
@@ -120,7 +127,7 @@ func (h *Handler) anonymizeJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ruleSet, err := privacy.NewRuleBuilder(req.Settings).Build()
+	ruleSet, err := privacy.NewRuleBuilder(req.Settings, privacy.WithGlobalExceptions(h.globalExceptions)).Build()
 	if err != nil {
 		h.logger.ErrorContext(ctx, "Failed to build rules from settings", slog.String("error", err.Error()))
 		monitoring.SetError(span, err)
@@ -192,7 +199,7 @@ func (h *Handler) anonymizeTextPlain(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusBadRequest, "INVALID_SETTINGS", err.Error())
 			return
 		}
-		rulesSlice, err := privacy.NewRuleBuilder(settings).Build()
+		rulesSlice, err := privacy.NewRuleBuilder(settings, privacy.WithGlobalExceptions(h.globalExceptions)).Build()
 		if err != nil {
 			respondError(w, http.StatusBadRequest, "INVALID_SETTINGS", err.Error())
 			return
@@ -293,7 +300,7 @@ func (h *Handler) AnonymizeBatch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ruleSet, err := privacy.NewRuleBuilder(req.Settings).Build()
+		ruleSet, err := privacy.NewRuleBuilder(req.Settings, privacy.WithGlobalExceptions(h.globalExceptions)).Build()
 		if err != nil {
 			h.logger.ErrorContext(ctx, "Failed to build rules from settings in batch item",
 				slog.Int("index", i),

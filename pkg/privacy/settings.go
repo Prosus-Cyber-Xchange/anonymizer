@@ -23,7 +23,7 @@ type ExceptionSettings struct {
 
 // MatchSettings represents the matching condition for an exception
 type MatchSettings struct {
-	Operator string `yaml:"operator"` // equal, ignoreCaseEqual, startsWith, endsWith
+	Operator string `yaml:"operator"` // equal, ignoreCaseEqual, startsWith, endsWith, regex
 	Pattern  string `yaml:"pattern"`
 }
 

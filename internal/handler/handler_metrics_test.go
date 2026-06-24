@@ -22,10 +22,15 @@ func TestNewHandlerWithMetrics(t *testing.T) {
 		byteAnalyzer := newTestByteAnalyzer(t, logger)
 		privacyService := privacy.NewService(byteAnalyzer, logger)
 
-		handler := handler.NewHandlerWithMetrics(logger, privacyService, maxBatchSize, metrics)
+		h := handler.NewHandler(handler.HandlerConfig{
+			Logger:         logger,
+			PrivacyService: privacyService,
+			MaxBatchSize:   maxBatchSize,
+			Metrics:        metrics,
+		})
 
-		require.NotNil(t, handler)
-		assert.Equal(t, 65536, 65536) // Verify handler was created with correct threshold
+		require.NotNil(t, h)
+		assert.Equal(t, 65536, 65536)
 	})
 
 	t.Run("NewHandler creates handler with empty metrics", func(t *testing.T) {
@@ -33,8 +38,12 @@ func TestNewHandlerWithMetrics(t *testing.T) {
 		byteAnalyzer := newTestByteAnalyzer(t, logger)
 		privacyService := privacy.NewService(byteAnalyzer, logger)
 
-		handler := handler.NewHandler(logger, privacyService, maxBatchSize)
+		h := handler.NewHandler(handler.HandlerConfig{
+			Logger:         logger,
+			PrivacyService: privacyService,
+			MaxBatchSize:   maxBatchSize,
+		})
 
-		require.NotNil(t, handler)
+		require.NotNil(t, h)
 	})
 }
