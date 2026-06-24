@@ -137,6 +137,12 @@ func (rb *RuleBuilder) buildExceptionMatcher(match MatchSettings) (analyzer.Matc
 		matchPattern = pattern.StartsWith(patternBytes)
 	case pattern.MatchOperatorEndsWith:
 		matchPattern = pattern.EndsWith(patternBytes)
+	case pattern.MatchOperatorRegex:
+		regexPattern, err := pattern.Regex(match.Pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex pattern %q: %w", match.Pattern, err)
+		}
+		matchPattern = regexPattern
 	default:
 		return nil, fmt.Errorf("unsupported match operator: %s", match.Operator)
 	}

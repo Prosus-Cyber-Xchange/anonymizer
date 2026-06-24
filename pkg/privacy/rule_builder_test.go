@@ -172,6 +172,7 @@ func TestRuleBuilder_Build_AllMatchOperators(t *testing.T) {
 		{"ignore case", pattern.MatchOperatorIgnoreCaseEqual, "CASE@EXAMPLE.COM"},
 		{"starts with", pattern.MatchOperatorStartsWith, "noreply@"},
 		{"ends with", pattern.MatchOperatorEndsWith, "@example.com"},
+		{"regex", pattern.MatchOperatorRegex, `noreply\d+@example\.com`},
 	}
 
 	for _, tc := range operators {
@@ -260,6 +261,38 @@ func TestRuleBuilder_Build_InvalidMatchOperator(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported match operator")
+}
+
+func TestRuleBuilder_Build_InvalidRegexPattern(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+	}
+
+	settings := privacy.PrivacySettings{
+		Entities: []privacy.EntitySettings{
+			{
+				Name: "EMAIL",
+				Exceptions: []privacy.ExceptionSettings{
+					{
+						Reason: "Test regex exception",
+						Match: privacy.MatchSettings{
+							Operator: pattern.MatchOperatorRegex,
+							Pattern:  "[invalid(",
+						},
+					},
+				},
+				Redaction: &privacy.RedactionSettings{
+					Replacement: "<EMAIL_REDACTED>",
+				},
+			},
+		},
+	}
+
+	builder := privacy.NewRuleBuilder(settings)
+	_, err := builder.Build()
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid regex pattern")
 }
 
 func TestRuleBuilder_Build_NoAnonymizationStrategy(t *testing.T) {
