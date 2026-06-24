@@ -49,7 +49,7 @@ func (p *ServiceRulesPlugin) Middleware(services server.CoreServices) func(http.
 				return
 			}
 
-			rules, err := privacy.NewRuleBuilder(settings, privacy.WithGlobalExceptions(nil)).Build()
+			rules, err := privacy.NewRuleBuilder(settings).Build()
 			if err != nil {
 				services.Logger.Error("failed to build rules", slog.String("error", err.Error()))
 				next.ServeHTTP(w, r)

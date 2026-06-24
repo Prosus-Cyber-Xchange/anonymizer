@@ -19,6 +19,15 @@ import (
 	"github.com/uber-go/tally/v4"
 )
 
+// HandlerConfig holds the configuration for creating a Handler.
+type HandlerConfig struct {
+	Logger           *slog.Logger
+	PrivacyService   *privacy.Service
+	MaxBatchSize     int
+	GlobalExceptions []privacy.ExceptionSettings
+	Metrics          PrivacyMetrics
+}
+
 // Handler handles HTTP requests for the anonymizer API
 type Handler struct {
 	logger           *slog.Logger
@@ -29,22 +38,19 @@ type Handler struct {
 	globalExceptions []privacy.ExceptionSettings
 }
 
-// NewHandler creates a new API handler
-func NewHandler(logger *slog.Logger, privacyService *privacy.Service, maxBatchSize int, globalExceptions []privacy.ExceptionSettings) *Handler {
-	scope := tally.NoopScope
-	metrics := PrivacyMetrics{scope: scope}
-	return NewHandlerWithMetrics(logger, privacyService, maxBatchSize, globalExceptions, metrics)
-}
-
-// NewHandlerWithMetrics creates a new API handler with custom metrics
-func NewHandlerWithMetrics(logger *slog.Logger, privacyService *privacy.Service, maxBatchSize int, globalExceptions []privacy.ExceptionSettings, metrics PrivacyMetrics) *Handler {
+// NewHandler creates a new API handler from the given configuration.
+// If Metrics is zero-valued, a noop metrics scope is used.
+func NewHandler(cfg HandlerConfig) *Handler {
+	if cfg.Metrics.scope == nil {
+		cfg.Metrics = PrivacyMetrics{scope: tally.NoopScope}
+	}
 	return &Handler{
-		logger:           logger,
-		privacyService:   privacyService,
+		logger:           cfg.Logger,
+		privacyService:   cfg.PrivacyService,
 		bufferPool:       NewBufferPool(),
-		metrics:          metrics,
-		maxBatchSize:     maxBatchSize,
-		globalExceptions: globalExceptions,
+		metrics:          cfg.Metrics,
+		maxBatchSize:     cfg.MaxBatchSize,
+		globalExceptions: cfg.GlobalExceptions,
 	}
 }
 

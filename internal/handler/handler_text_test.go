@@ -24,7 +24,7 @@ func TestHandler_Anonymize_TextPlain_Success(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	h := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	h := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize", strings.NewReader("Contact us at john@example.com"))
 	req.Header.Set("Content-Type", "text/plain")
@@ -46,7 +46,7 @@ func TestHandler_Anonymize_TextPlain_MissingEntities_NoContextRules(t *testing.T
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	h := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	h := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize", strings.NewReader("some text"))
 	req.Header.Set("Content-Type", "text/plain")
@@ -63,7 +63,7 @@ func TestHandler_Anonymize_UnsupportedContentType(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	h := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	h := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize", strings.NewReader("<xml/>"))
 	req.Header.Set("Content-Type", "application/xml")
@@ -83,7 +83,7 @@ func TestHandler_Anonymize_NoContentType_DefaultsJSON(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	h := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	h := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	body := `{"text":"user@example.com","settings":{"entities":[{"name":"EMAIL","redaction":{"replacement":"<REDACTED>"}}]}}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize", strings.NewReader(body))
@@ -100,7 +100,7 @@ func TestHandler_AnonymizeBatch_NonJSON_Returns415(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	h := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	h := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize/batch", strings.NewReader("plain text"))
 	req.Header.Set("Content-Type", "text/plain")
@@ -120,7 +120,7 @@ func TestHandler_Anonymize_TextPlain_WithContextRules(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	h := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	h := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	// Build rules for injection
 	settings := privacy.PrivacySettings{

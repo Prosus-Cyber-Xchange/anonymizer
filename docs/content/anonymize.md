@@ -100,6 +100,46 @@ Exceptions let you skip anonymization for specific values that match a pattern. 
 | `ignoreCaseEqual` | Case-insensitive exact match | `noreply@ifood.com.br` | `noreply@ifood.com.br`, `NoReply@ifood.com.br`, etc. |
 | `startsWith` | Value starts with the pattern | `admin@` | `admin@ifood.com.br`, `admin@corp.com`, etc. |
 | `endsWith` | Value ends with the pattern | `@ifood.com.br` | Any address on the `ifood.com.br` domain |
+| `regex` | Value matches the Go regexp pattern | `noreply\d+@example\.com` | `noreply1@example.com`, `noreply42@example.com`, etc. |
+
+## Global Exceptions
+
+Global exceptions are server-level exception patterns that apply to **every rule** across all anonymization requests. They provide a centralized way to exclude known-safe values without repeating exception rules in every request or plugin.
+
+### How they work
+
+Global exceptions are prepended to each rule's exception list **before** per-entity exceptions. This means:
+
+- They are evaluated first
+- If a global exception matches, subsequent per-entity exceptions are still checked
+- They apply regardless of how rules are built (inline JSON settings, plugin-injected rules, headers)
+
+### Configuration
+
+Global exceptions are set when constructing the server via the `WithGlobalExceptions` option:
+
+```go
+app, err := server.NewFromConfig(ctx,
+    server.WithGlobalExceptions([]privacy.ExceptionSettings{
+        {
+            Reason: "Git SSH addresses are not PII",
+            Match: privacy.MatchSettings{
+                Operator: "startsWith",
+                Pattern:  "git@",
+            },
+        },
+        {
+            Reason: "Go module version paths are not PII",
+            Match: privacy.MatchSettings{
+                Operator: "regex",
+                Pattern:  `@v\d+\.\d+\.\d+$`,
+            },
+        },
+    }),
+)
+```
+
+All [match operators](#match-operators) — including `regex` — are supported. If no global exceptions are configured, none are applied.
 
 ## Examples
 

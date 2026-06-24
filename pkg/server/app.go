@@ -161,13 +161,16 @@ func (a *AnonymizerServer) Handler() http.Handler {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	var h *handler.Handler
-	if a.metricsScope != nil && a.metricsScope != tally.NoopScope {
-		metrics := handler.NewPrivacyMetrics(a.metricsScope)
-		h = handler.NewHandlerWithMetrics(a.logger, a.privacyService, a.envConfig.MaxBatchSize, a.globalExceptions, metrics)
-	} else {
-		h = handler.NewHandler(a.logger, a.privacyService, a.envConfig.MaxBatchSize, a.globalExceptions)
+	cfg := handler.HandlerConfig{
+		Logger:           a.logger,
+		PrivacyService:   a.privacyService,
+		MaxBatchSize:     a.envConfig.MaxBatchSize,
+		GlobalExceptions: a.globalExceptions,
 	}
+	if a.metricsScope != nil && a.metricsScope != tally.NoopScope {
+		cfg.Metrics = handler.NewPrivacyMetrics(a.metricsScope)
+	}
+	h := handler.NewHandler(cfg)
 
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Post("/anonymize", h.Anonymize)

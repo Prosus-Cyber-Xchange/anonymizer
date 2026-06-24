@@ -43,7 +43,7 @@ graph TD
 | `internal/handler/` | HTTP handlers, content-type dispatch, JSON/text-plain parsing, error responses, buffer pooling | (internal) |
 | `internal/monitoring/` | OpenTelemetry tracing, Prometheus metrics registry | (internal) |
 | `pkg/privacy/` | Core anonymization service, rule builder, privacy settings types | `Service`, `RuleBuilder`, `PrivacySettings`, `EntitySettings`, `RedactionSettings`, `MaskSettings` |
-| `pkg/config/` | Environment variable loading, YAML rules loading, settings validation | `EnvConfig`, `ServerConfig`, `YAMLRulesLoader`, `ValidatePrivacyConfig` |
+| `pkg/config/` | Environment variable loading, settings validation | `EnvConfig`, `ServerConfig`, `ValidatePrivacyConfig` |
 | `pkg/context/` | Context key/value helpers for rule injection | `WithRules`, `RulesFromContext` |
 
 ## Plugin System

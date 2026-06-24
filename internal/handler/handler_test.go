@@ -44,7 +44,7 @@ func TestHandler_AnonymizeBatch_Success(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	handler := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	handler := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	body := `[{"text":"Contact us at john@example.com","settings":{"entities":[{"name":"EMAIL","redaction":{"replacement":"<EMAIL_REDACTED>"}}]}}]`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize/batch", strings.NewReader(body))
@@ -74,7 +74,7 @@ func TestHandler_AnonymizeBatch_MultipleItems(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	handler := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	handler := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	body := `[` +
 		`{"text":"Email: john@example.com","settings":{"entities":[{"name":"EMAIL","redaction":{"replacement":"<EMAIL_REDACTED>"}}]}},` +
@@ -112,7 +112,7 @@ func TestHandler_AnonymizeBatch_EmptyBatch(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	handler := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	handler := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize/batch", strings.NewReader(`[]`))
 	rec := httptest.NewRecorder()
@@ -134,7 +134,7 @@ func TestHandler_AnonymizeBatch_ExceedsMaxSize(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	handler := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	handler := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	item := `{"text":"hello","settings":{"entities":[{"name":"EMAIL","redaction":{"replacement":"<REDACTED>"}}]}}`
 	items := make([]string, maxBatchSize+1)
@@ -159,7 +159,7 @@ func TestHandler_AnonymizeBatch_InvalidJSON(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	handler := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	handler := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize/batch", strings.NewReader(`{not valid json`))
 	rec := httptest.NewRecorder()
@@ -178,7 +178,7 @@ func TestHandler_AnonymizeBatch_InvalidSettings(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	handler := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	handler := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	// Empty entities list is invalid per ValidatePrivacyConfig
 	body := `[{"text":"hello","settings":{}}]`
@@ -199,7 +199,7 @@ func TestHandler_AnonymizeBatch_NoPIIDetected(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	byteAnalyzer := newTestByteAnalyzer(t, logger)
 	privacyService := privacy.NewService(byteAnalyzer, logger)
-	handler := handler.NewHandler(logger, privacyService, maxBatchSize, nil)
+	handler := handler.NewHandler(handler.HandlerConfig{Logger: logger, PrivacyService: privacyService, MaxBatchSize: maxBatchSize})
 
 	body := `[{"text":"No sensitive data here","settings":{"entities":[{"name":"EMAIL","redaction":{"replacement":"<EMAIL_REDACTED>"}}]}}]`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/anonymize/batch", strings.NewReader(body))
