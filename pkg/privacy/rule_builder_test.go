@@ -12,6 +12,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var testGlobalExceptions = []privacy.ExceptionSettings{
+	{
+		Reason: "Git SSH address should not be redacted",
+		Match: privacy.MatchSettings{
+			Operator: pattern.MatchOperatorStartsWith,
+			Pattern:  "git@",
+		},
+	},
+	{
+		Reason: "Go module version path should not be redacted",
+		Match: privacy.MatchSettings{
+			Operator: pattern.MatchOperatorRegex,
+			Pattern:  `@v\d+\.\d+\.\d+$`,
+		},
+	},
+}
+
 func TestRuleBuilder_Build_EmailWithRedaction(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
@@ -146,18 +163,18 @@ func TestRuleBuilder_Build_WithExceptions(t *testing.T) {
 		},
 	}
 
-	builder := privacy.NewRuleBuilder(settings)
+	builder := privacy.NewRuleBuilder(settings, privacy.WithGlobalExceptions(testGlobalExceptions))
 	rules, err := builder.Build()
 
 	require.NoError(t, err)
 	require.Len(t, rules, 1)
 
 	rule := rules[0]
-	expectedExceptions := len(privacy.GlobalExceptions) + len(settings.Entities[0].Exceptions)
+	expectedExceptions := len(testGlobalExceptions) + len(settings.Entities[0].Exceptions)
 	assert.Len(t, rule.Exceptions, expectedExceptions)
-	assert.Equal(t, privacy.GlobalExceptions[0].Reason, rule.Exceptions[0].Reason)
-	assert.Equal(t, "Public support email", rule.Exceptions[len(privacy.GlobalExceptions)].Reason)
-	assert.Equal(t, "Noreply emails", rule.Exceptions[len(privacy.GlobalExceptions)+1].Reason)
+	assert.Equal(t, testGlobalExceptions[0].Reason, rule.Exceptions[0].Reason)
+	assert.Equal(t, "Public support email", rule.Exceptions[len(testGlobalExceptions)].Reason)
+	assert.Equal(t, "Noreply emails", rule.Exceptions[len(testGlobalExceptions)+1].Reason)
 }
 
 func TestRuleBuilder_Build_AllMatchOperators(t *testing.T) {
@@ -199,18 +216,18 @@ func TestRuleBuilder_Build_AllMatchOperators(t *testing.T) {
 				},
 			}
 
-			builder := privacy.NewRuleBuilder(settings)
+			builder := privacy.NewRuleBuilder(settings, privacy.WithGlobalExceptions(testGlobalExceptions))
 			rules, err := builder.Build()
 
 			require.NoError(t, err)
 			require.Len(t, rules, 1)
-			require.Len(t, rules[0].Exceptions, 1+len(privacy.GlobalExceptions))
-			assert.NotNil(t, rules[0].Exceptions[len(privacy.GlobalExceptions)].Matcher)
+			require.Len(t, rules[0].Exceptions, 1+len(testGlobalExceptions))
+			assert.NotNil(t, rules[0].Exceptions[len(testGlobalExceptions)].Matcher)
 		})
 	}
 }
 
-func TestRuleBuilder_Build_GlobalExceptionsInjected(t *testing.T) {
+func TestRuleBuilder_Build_WithGlobalExceptionsNil(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
 	}
@@ -226,15 +243,39 @@ func TestRuleBuilder_Build_GlobalExceptionsInjected(t *testing.T) {
 		},
 	}
 
-	builder := privacy.NewRuleBuilder(settings)
+	builder := privacy.NewRuleBuilder(settings, privacy.WithGlobalExceptions(nil))
+	rules, err := builder.Build()
+
+	require.NoError(t, err)
+	require.Len(t, rules, 1)
+	assert.Empty(t, rules[0].Exceptions)
+}
+
+func TestRuleBuilder_Build_WithGlobalExceptions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+	}
+
+	settings := privacy.PrivacySettings{
+		Entities: []privacy.EntitySettings{
+			{
+				Name: "EMAIL",
+				Redaction: &privacy.RedactionSettings{
+					Replacement: "<EMAIL_REDACTED>",
+				},
+			},
+		},
+	}
+
+	builder := privacy.NewRuleBuilder(settings, privacy.WithGlobalExceptions(testGlobalExceptions))
 	rules, err := builder.Build()
 
 	require.NoError(t, err)
 	require.Len(t, rules, 1)
 
-	assert.Len(t, rules[0].Exceptions, len(privacy.GlobalExceptions))
+	assert.Len(t, rules[0].Exceptions, len(testGlobalExceptions))
 	for i, exc := range rules[0].Exceptions {
-		assert.Equal(t, privacy.GlobalExceptions[i].Reason, exc.Reason)
+		assert.Equal(t, testGlobalExceptions[i].Reason, exc.Reason)
 	}
 }
 

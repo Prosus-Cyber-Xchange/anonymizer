@@ -15,12 +15,13 @@ import (
 // YAMLRulesLoader loads privacy rules from YAML files on disk.
 // Each service has a file named <service_name>.yaml in the base path.
 type YAMLRulesLoader struct {
-	basePath string
+	basePath         string
+	globalExceptions []privacy.ExceptionSettings
 }
 
 // NewYAMLRulesLoader creates a loader that reads YAML files from basePath.
-func NewYAMLRulesLoader(basePath string) *YAMLRulesLoader {
-	return &YAMLRulesLoader{basePath: basePath}
+func NewYAMLRulesLoader(basePath string, globalExceptions []privacy.ExceptionSettings) *YAMLRulesLoader {
+	return &YAMLRulesLoader{basePath: basePath, globalExceptions: globalExceptions}
 }
 
 // Load reads the YAML file for the given service and builds analyzer rules.
@@ -37,7 +38,7 @@ func (l *YAMLRulesLoader) Load(_ context.Context, serviceName string) ([]analyze
 		return nil, fmt.Errorf("failed to parse YAML rules for %s: %w", serviceName, err)
 	}
 
-	rules, err := privacy.NewRuleBuilder(settings).Build()
+	rules, err := privacy.NewRuleBuilder(settings, privacy.WithGlobalExceptions(l.globalExceptions)).Build()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build rules for %s: %w", serviceName, err)
 	}

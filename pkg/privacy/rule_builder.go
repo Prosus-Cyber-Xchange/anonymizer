@@ -8,34 +8,31 @@ import (
 	"github.com/Prosus-Cyber-Xchange/leakspok/pattern"
 )
 
-// GlobalExceptions defines exception matchers that are injected into every rule.
-var GlobalExceptions = []ExceptionSettings{
-	{
-		Reason: "Git SSH address should not be redacted",
-		Match: MatchSettings{
-			Operator: pattern.MatchOperatorStartsWith,
-			Pattern:  "git@",
-		},
-	},
-	{
-		Reason: "Go module version path should not be redacted",
-		Match: MatchSettings{
-			Operator: pattern.MatchOperatorRegex,
-			Pattern:  `@v\d+\.\d+\.\d+$`,
-		},
-	},
+// RuleBuilderOption configures a RuleBuilder during construction.
+type RuleBuilderOption func(*RuleBuilder)
+
+// WithGlobalExceptions sets the global exceptions injected into every rule.
+func WithGlobalExceptions(exceptions []ExceptionSettings) RuleBuilderOption {
+	return func(rb *RuleBuilder) {
+		rb.globalExceptions = exceptions
+	}
 }
 
 // RuleBuilder converts privacy settings into leakspok analyzer rules
 type RuleBuilder struct {
-	settings PrivacySettings
+	settings         PrivacySettings
+	globalExceptions []ExceptionSettings
 }
 
-// NewRuleBuilder creates a new rule builder with the provided settings
-func NewRuleBuilder(settings PrivacySettings) *RuleBuilder {
-	return &RuleBuilder{
+// NewRuleBuilder creates a new rule builder with the provided settings and options.
+func NewRuleBuilder(settings PrivacySettings, opts ...RuleBuilderOption) *RuleBuilder {
+	rb := &RuleBuilder{
 		settings: settings,
 	}
+	for _, opt := range opts {
+		opt(rb)
+	}
+	return rb
 }
 
 // Build converts privacy settings into a slice of leakspok analyzer rules
@@ -62,8 +59,8 @@ func (rb *RuleBuilder) buildRule(ruleIndex int, entityConfig EntitySettings) (an
 	}
 
 	// Build exceptions: prepend global exceptions, then append per-entity exceptions
-	allExceptions := make([]ExceptionSettings, 0, len(GlobalExceptions)+len(entityConfig.Exceptions))
-	allExceptions = append(allExceptions, GlobalExceptions...)
+	allExceptions := make([]ExceptionSettings, 0, len(rb.globalExceptions)+len(entityConfig.Exceptions))
+	allExceptions = append(allExceptions, rb.globalExceptions...)
 	allExceptions = append(allExceptions, entityConfig.Exceptions...)
 
 	exceptions := make([]analyzer.Exception, 0, len(allExceptions))

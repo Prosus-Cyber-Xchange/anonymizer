@@ -21,29 +21,30 @@ import (
 
 // Handler handles HTTP requests for the anonymizer API
 type Handler struct {
-	logger         *slog.Logger
-	privacyService *privacy.Service
-	bufferPool     *BufferPool
-	metrics        PrivacyMetrics
-	maxBatchSize   int
+	logger           *slog.Logger
+	privacyService   *privacy.Service
+	bufferPool       *BufferPool
+	metrics          PrivacyMetrics
+	maxBatchSize     int
+	globalExceptions []privacy.ExceptionSettings
 }
 
 // NewHandler creates a new API handler
-func NewHandler(logger *slog.Logger, privacyService *privacy.Service, maxBatchSize int) *Handler {
-	// Use NoopScope for default metrics (no-op implementation)
+func NewHandler(logger *slog.Logger, privacyService *privacy.Service, maxBatchSize int, globalExceptions []privacy.ExceptionSettings) *Handler {
 	scope := tally.NoopScope
 	metrics := PrivacyMetrics{scope: scope}
-	return NewHandlerWithMetrics(logger, privacyService, maxBatchSize, metrics)
+	return NewHandlerWithMetrics(logger, privacyService, maxBatchSize, globalExceptions, metrics)
 }
 
 // NewHandlerWithMetrics creates a new API handler with custom metrics
-func NewHandlerWithMetrics(logger *slog.Logger, privacyService *privacy.Service, maxBatchSize int, metrics PrivacyMetrics) *Handler {
+func NewHandlerWithMetrics(logger *slog.Logger, privacyService *privacy.Service, maxBatchSize int, globalExceptions []privacy.ExceptionSettings, metrics PrivacyMetrics) *Handler {
 	return &Handler{
-		logger:         logger,
-		privacyService: privacyService,
-		bufferPool:     NewBufferPool(),
-		metrics:        metrics,
-		maxBatchSize:   maxBatchSize,
+		logger:           logger,
+		privacyService:   privacyService,
+		bufferPool:       NewBufferPool(),
+		metrics:          metrics,
+		maxBatchSize:     maxBatchSize,
+		globalExceptions: globalExceptions,
 	}
 }
 
@@ -120,7 +121,7 @@ func (h *Handler) anonymizeJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ruleSet, err := privacy.NewRuleBuilder(req.Settings).Build()
+	ruleSet, err := privacy.NewRuleBuilder(req.Settings, privacy.WithGlobalExceptions(h.globalExceptions)).Build()
 	if err != nil {
 		h.logger.ErrorContext(ctx, "Failed to build rules from settings", slog.String("error", err.Error()))
 		monitoring.SetError(span, err)
@@ -192,7 +193,7 @@ func (h *Handler) anonymizeTextPlain(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusBadRequest, "INVALID_SETTINGS", err.Error())
 			return
 		}
-		rulesSlice, err := privacy.NewRuleBuilder(settings).Build()
+		rulesSlice, err := privacy.NewRuleBuilder(settings, privacy.WithGlobalExceptions(h.globalExceptions)).Build()
 		if err != nil {
 			respondError(w, http.StatusBadRequest, "INVALID_SETTINGS", err.Error())
 			return
@@ -293,7 +294,7 @@ func (h *Handler) AnonymizeBatch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ruleSet, err := privacy.NewRuleBuilder(req.Settings).Build()
+		ruleSet, err := privacy.NewRuleBuilder(req.Settings, privacy.WithGlobalExceptions(h.globalExceptions)).Build()
 		if err != nil {
 			h.logger.ErrorContext(ctx, "Failed to build rules from settings in batch item",
 				slog.Int("index", i),

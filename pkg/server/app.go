@@ -23,13 +23,14 @@ import (
 // AnonymizerServer is the configured anonymizer application.
 // Created via NewFromConfig() and used to get an HTTP handler or start the built-in server.
 type AnonymizerServer struct {
-	logger         *slog.Logger
-	byteAnalyzer   *analyzer.ByteAnalyzer
-	plugins        []any
-	envConfig      config.EnvConfig
-	metricsScope   tally.Scope
-	privacyService *privacy.Service
-	coreServices   CoreServices
+	logger           *slog.Logger
+	byteAnalyzer     *analyzer.ByteAnalyzer
+	plugins          []any
+	envConfig        config.EnvConfig
+	metricsScope     tally.Scope
+	privacyService   *privacy.Service
+	coreServices     CoreServices
+	globalExceptions []privacy.ExceptionSettings
 }
 
 // NewFromConfig creates a new AnonymizerServer with the given context and options.
@@ -163,9 +164,9 @@ func (a *AnonymizerServer) Handler() http.Handler {
 	var h *handler.Handler
 	if a.metricsScope != nil && a.metricsScope != tally.NoopScope {
 		metrics := handler.NewPrivacyMetrics(a.metricsScope)
-		h = handler.NewHandlerWithMetrics(a.logger, a.privacyService, a.envConfig.MaxBatchSize, metrics)
+		h = handler.NewHandlerWithMetrics(a.logger, a.privacyService, a.envConfig.MaxBatchSize, a.globalExceptions, metrics)
 	} else {
-		h = handler.NewHandler(a.logger, a.privacyService, a.envConfig.MaxBatchSize)
+		h = handler.NewHandler(a.logger, a.privacyService, a.envConfig.MaxBatchSize, a.globalExceptions)
 	}
 
 	router.Route("/api/v1", func(r chi.Router) {

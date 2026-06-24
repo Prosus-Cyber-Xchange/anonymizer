@@ -14,7 +14,7 @@ import (
 
 func TestYAMLRulesLoader_Load_Success(t *testing.T) {
 	basePath := filepath.Join("testdata")
-	loader := config.NewYAMLRulesLoader(basePath)
+	loader := config.NewYAMLRulesLoader(basePath, nil)
 
 	rules, err := loader.Load(context.Background(), "email_service")
 	require.NoError(t, err)
@@ -23,7 +23,7 @@ func TestYAMLRulesLoader_Load_Success(t *testing.T) {
 
 func TestYAMLRulesLoader_Load_FileNotFound(t *testing.T) {
 	basePath := filepath.Join("testdata")
-	loader := config.NewYAMLRulesLoader(basePath)
+	loader := config.NewYAMLRulesLoader(basePath, nil)
 
 	_, err := loader.Load(context.Background(), "nonexistent_service")
 	assert.Error(t, err)
@@ -35,7 +35,7 @@ func TestYAMLRulesLoader_Load_InvalidYAML(t *testing.T) {
 	err := os.WriteFile(filepath.Join(dir, "broken_service.yaml"), []byte("not: valid: yaml: ["), 0644)
 	require.NoError(t, err)
 
-	loader := config.NewYAMLRulesLoader(dir)
+	loader := config.NewYAMLRulesLoader(dir, nil)
 	_, err = loader.Load(context.Background(), "broken_service")
 	assert.Error(t, err)
 }
