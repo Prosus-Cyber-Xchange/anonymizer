@@ -51,8 +51,8 @@ github.com/DataDog/sketches-go v1.4.8/go.mod h1:a/wjRUqzqtGS8qRHRPDCs4EAQfmvPDZG
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/Prosus-Cyber-Xchange/leakspok v0.0.1 h1:LTSeNVQ5t50m/Zf8qNF2h/7p30s+xM4ZvGKcmbjH5/M=
-github.com/Prosus-Cyber-Xchange/leakspok v0.0.1/go.mod h1:GhpeMhhXXPJS/eXwfzWr4v76kIf5hZ0HdMgkpVDW9ck=
+github.com/Prosus-Cyber-Xchange/leakspok v0.1.1 h1:2uqxfv5nG5jJw6tlGvHXu4AhyJuCHStSgDPiLSrzv/M=
+github.com/Prosus-Cyber-Xchange/leakspok v0.1.1/go.mod h1:GhpeMhhXXPJS/eXwfzWr4v76kIf5hZ0HdMgkpVDW9ck=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=

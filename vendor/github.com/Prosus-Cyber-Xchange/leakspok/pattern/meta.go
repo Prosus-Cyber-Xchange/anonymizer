@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -18,6 +19,8 @@ const (
 	MatchOperatorStartsWith = "startswith"
 	// MatchOperatorEndsWith matches when the input ends with the reference.
 	MatchOperatorEndsWith = "endswith"
+	// MatchOperatorRegex matches when the input matches the reference as a Go regexp pattern.
+	MatchOperatorRegex = "regex"
 )
 
 // Not returns a Pattern that matches when the provided Pattern does not match.
@@ -177,6 +180,22 @@ func EndsWith(ref []byte) Pattern {
 			return bytes.HasSuffix(s, ref)
 		},
 	)
+}
+
+// Regex returns a Pattern that matches when the input matches the provided regexp pattern.
+// The expression is compiled at construction time and returns an error if invalid.
+// The pattern name includes the expression for debugging.
+func Regex(expr string) (Pattern, error) {
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile regex pattern %q: %w", expr, err)
+	}
+	return NewBasePattern(
+		"Regex("+expr+")",
+		func(_ context.Context, s []byte) bool {
+			return re.Match(s)
+		},
+	), nil
 }
 
 // AtLeastN returns a Pattern that matches when at least n of the supplied patterns match.
