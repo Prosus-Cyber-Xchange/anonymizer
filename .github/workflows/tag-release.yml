@@ -1,0 +1,30 @@
+name: Tag Release
+
+on:
+  push:
+    branches: [main]
+    paths: ['VERSION']
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Read version
+        id: version
+        run: echo "version=v$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag
+        run: |
+          git tag -a "${{ steps.version.outputs.version }}" -m "Release ${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
