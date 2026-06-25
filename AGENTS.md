@@ -217,3 +217,7 @@ Exceptions use the same pattern matching system as leakspok. When building excep
 ## Active Technologies
 - Go 1.25.0 + leakspok (PII detection), chi v5 (HTTP routing), foodsec-go-sdk (server lifecycle, logging, config), Datadog (tracing/profiling), tally (metrics), testify + uber-go/mock (testing)
 - Optional Redis (leakspok cache)
+
+## Versioning
+
+The project version is defined in the `VERSION` file at the repository root. To bump the version, update this single file — the release workflow and `task tag` both read from it.
