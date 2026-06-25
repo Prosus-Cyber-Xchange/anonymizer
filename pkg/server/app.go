@@ -66,7 +66,7 @@ func NewFromConfig(ctx context.Context, opts ...Option) (*AnonymizerServer, erro
 				TTL:                     envConfig.Privacy.CacheTTL,
 				DisableInMemoryCache:    envConfig.Privacy.DisableInMemoryCache,
 				RedisAddr:               envConfig.Privacy.RedisCacheAddr,
-				RedisPassword:           envConfig.RedisCacheToken,
+				RedisPassword:           envConfig.Privacy.RedisToken,
 				RedisDialTimeout:        envConfig.Privacy.RedisDialTimeout,
 				RedisReadTimeout:        envConfig.Privacy.RedisReadTimeout,
 				RedisWriteTimeout:       envConfig.Privacy.RedisWriteTimeout,

@@ -27,6 +27,8 @@ type EnvConfig struct {
 
 		DisableInMemoryCache bool `env:"CACHE_DISABLE_IN_MEMORY" envDefault:"false"`
 
+		RedisToken string `env:"REDIS_CACHE_TOKEN" envDefault:""`
+
 		// Concurrency settings
 		ConcurrencyEnabled                 bool          `env:"CONCURRENCY_ENABLED" envDefault:"false"`
 		ConcurrencyTokenProcessing         bool          `env:"CONCURRENCY_TOKEN_PROCESSING" envDefault:"false"`
@@ -35,8 +37,6 @@ type EnvConfig struct {
 		ConcurrencyTokenPoolSize           int           `env:"CONCURRENCY_TOKEN_POOL_SIZE" envDefault:"0"`
 		ConcurrencyMaxGoroutineIdleTimeout time.Duration `env:"CONCURRENCY_MAX_GOROUTINE_IDLE_TIMEOUT" envDefault:"10s"`
 	} `envPrefix:"PRIVACY_"`
-
-	RedisCacheToken string `env:"REDIS_ANONYMIZER_SERVICE_V2_CACHE_TOKEN" envDefault:""`
 
 	MaxBatchSize             int  `env:"MAX_BATCH_SIZE" envDefault:"100"`
 	PatternMonitoringEnabled bool `env:"PATTERN_MONITORING_ENABLED" envDefault:"false"`
