@@ -36,24 +36,24 @@ type AnonymizerServer struct {
 // NewFromConfig creates a new AnonymizerServer with the given context and options.
 // It initializes all core services and wires any registered plugins.
 func NewFromConfig(ctx context.Context, opts ...Option) (*AnonymizerServer, error) {
-	envConfig, err := config.LoadEnv()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load environment config: %w", err)
-	}
-
 	a := &AnonymizerServer{
-		envConfig:    envConfig,
 		metricsScope: tally.NoopScope,
 	}
 
-	// Apply options
 	for _, opt := range opts {
 		opt(a)
 	}
 
-	// Create default logger if not provided
+	if a.envConfig == (config.EnvConfig{}) {
+		envConfig, err := config.LoadEnv()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load environment config: %w", err)
+		}
+		a.envConfig = envConfig
+	}
+
 	if a.logger == nil {
-		a.logger = newLogger(envConfig)
+		a.logger = newLogger(a.envConfig)
 	}
 
 	// Create ByteAnalyzer if not provided, populating RunnerOptions from env config.
@@ -62,28 +62,28 @@ func NewFromConfig(ctx context.Context, opts ...Option) (*AnonymizerServer, erro
 		// Build RunnerOptions with Cache and Concurrency.
 		runnerOpts := analyzer.RunnerOptions{
 			Cache: analyzer.CacheOptions{
-				Enabled:                 envConfig.Privacy.Cache,
-				TTL:                     envConfig.Privacy.CacheTTL,
-				DisableInMemoryCache:    envConfig.Privacy.DisableInMemoryCache,
-				RedisAddr:               envConfig.Privacy.RedisCacheAddr,
-				RedisPassword:           envConfig.Privacy.RedisToken,
-				RedisDialTimeout:        envConfig.Privacy.RedisDialTimeout,
-				RedisReadTimeout:        envConfig.Privacy.RedisReadTimeout,
-				RedisWriteTimeout:       envConfig.Privacy.RedisWriteTimeout,
-				RedisPoolSize:           envConfig.Privacy.RedisPoolSize,
-				RedisMinIdleConns:       envConfig.Privacy.RedisMinIdleConns,
+				Enabled:                 a.envConfig.Privacy.Cache,
+				TTL:                     a.envConfig.Privacy.CacheTTL,
+				DisableInMemoryCache:    a.envConfig.Privacy.DisableInMemoryCache,
+				RedisAddr:               a.envConfig.Privacy.RedisCacheAddr,
+				RedisPassword:           a.envConfig.Privacy.RedisToken,
+				RedisDialTimeout:        a.envConfig.Privacy.RedisDialTimeout,
+				RedisReadTimeout:        a.envConfig.Privacy.RedisReadTimeout,
+				RedisWriteTimeout:       a.envConfig.Privacy.RedisWriteTimeout,
+				RedisPoolSize:           a.envConfig.Privacy.RedisPoolSize,
+				RedisMinIdleConns:       a.envConfig.Privacy.RedisMinIdleConns,
 				RedisInsecureSkipVerify: true,
-				RedisDisableClusterMode: envConfig.Privacy.RedisDisableCluster,
+				RedisDisableClusterMode: a.envConfig.Privacy.RedisDisableCluster,
 			},
 		}
 
 		runnerOpts.Concurrency = analyzer.ConcurrencyOptions{
-			Enabled:                   envConfig.Privacy.ConcurrencyEnabled,
-			ConcurrentTokenProcessing: envConfig.Privacy.ConcurrencyTokenProcessing,
-			ConcurrentRuleProcessing:  envConfig.Privacy.ConcurrencyRuleProcessing,
-			RuleRunnerPoolSize:        envConfig.Privacy.ConcurrencyRuleRunnerPoolSize,
-			TokenPoolSize:             envConfig.Privacy.ConcurrencyTokenPoolSize,
-			MaxGoroutineIdleTimeout:   envConfig.Privacy.ConcurrencyMaxGoroutineIdleTimeout,
+			Enabled:                   a.envConfig.Privacy.ConcurrencyEnabled,
+			ConcurrentTokenProcessing: a.envConfig.Privacy.ConcurrencyTokenProcessing,
+			ConcurrentRuleProcessing:  a.envConfig.Privacy.ConcurrencyRuleProcessing,
+			RuleRunnerPoolSize:        a.envConfig.Privacy.ConcurrencyRuleRunnerPoolSize,
+			TokenPoolSize:             a.envConfig.Privacy.ConcurrencyTokenPoolSize,
+			MaxGoroutineIdleTimeout:   a.envConfig.Privacy.ConcurrencyMaxGoroutineIdleTimeout,
 		}
 
 		ba, err := analyzer.MakeByteAnalyzer(ctx, a.logger, runnerOpts)

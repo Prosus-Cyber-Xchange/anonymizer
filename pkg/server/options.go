@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/config"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 	"github.com/Prosus-Cyber-Xchange/leakspok/analyzer"
 	"github.com/uber-go/tally/v4"
@@ -47,5 +48,13 @@ func WithMetricsScope(scope tally.Scope) Option {
 func WithGlobalExceptions(exceptions []privacy.ExceptionSettings) Option {
 	return func(a *AnonymizerServer) {
 		a.globalExceptions = exceptions
+	}
+}
+
+// WithEnv sets the environment configuration directly.
+// When used, NewFromConfig skips calling config.LoadEnv().
+func WithEnv(cfg config.EnvConfig) Option {
+	return func(a *AnonymizerServer) {
+		a.envConfig = cfg
 	}
 }
