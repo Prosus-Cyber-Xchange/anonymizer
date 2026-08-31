@@ -60,6 +60,15 @@ func TestLoadEnv_WithCustomValues(t *testing.T) {
 	assert.Equal(t, uint(9090), envConfig.Server.Port)
 }
 
+func TestLoadEnv_ReadFromReplicas(t *testing.T) {
+	t.Setenv("PRIVACY_CACHE_REDIS_READ_FROM_REPLICAS", "true")
+
+	envConfig, err := config.LoadEnv()
+
+	require.NoError(t, err)
+	assert.True(t, envConfig.Privacy.RedisReadFromReplicas)
+}
+
 func TestLoadEnv_InvalidPort(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")

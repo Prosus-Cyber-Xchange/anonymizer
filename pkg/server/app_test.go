@@ -11,8 +11,8 @@ import (
 	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/config"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/server"
-	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 	"github.com/testcontainers/testcontainers-go"
+	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,18 +40,19 @@ func setupRedis(t *testing.T) config.EnvConfig {
 		LogLevel:    "INFO",
 		ServiceName: "",
 		Privacy: struct {
-			Cache                  bool          `env:"CACHE_ENABLED" envDefault:"false"`
-			CacheTTL               time.Duration `env:"CACHE_TTL" envDefault:"1h"`
-			RedisCacheAddr         string        `env:"CACHE_REDIS_ADDR" envDefault:""`
-			RedisDisableCluster    bool          `env:"CACHE_REDIS_DISABLE_CLUSTER" envDefault:"false"`
-			RedisDialTimeout       time.Duration `env:"CACHE_REDIS_DIAL_TIMEOUT" envDefault:"0"`
-			RedisReadTimeout       time.Duration `env:"CACHE_REDIS_READ_TIMEOUT" envDefault:"0"`
-			RedisWriteTimeout      time.Duration `env:"CACHE_REDIS_WRITE_TIMEOUT" envDefault:"0"`
-			RedisPoolSize          int           `env:"CACHE_REDIS_POOL_SIZE" envDefault:"0"`
-			RedisMinIdleConns      int           `env:"CACHE_REDIS_MIN_IDLE_CONNS" envDefault:"0"`
-			CacheMetrics           bool          `env:"CACHE_METRICS" envDefault:"true"`
-			DisableInMemoryCache   bool          `env:"CACHE_DISABLE_IN_MEMORY" envDefault:"false"`
-			RedisToken             string        `env:"REDIS_CACHE_TOKEN" envDefault:""`
+			Cache                              bool          `env:"CACHE_ENABLED" envDefault:"false"`
+			CacheTTL                           time.Duration `env:"CACHE_TTL" envDefault:"1h"`
+			RedisCacheAddr                     string        `env:"CACHE_REDIS_ADDR" envDefault:""`
+			RedisDisableCluster                bool          `env:"CACHE_REDIS_DISABLE_CLUSTER" envDefault:"false"`
+			RedisReadFromReplicas              bool          `env:"CACHE_REDIS_READ_FROM_REPLICAS" envDefault:"false"`
+			RedisDialTimeout                   time.Duration `env:"CACHE_REDIS_DIAL_TIMEOUT" envDefault:"0"`
+			RedisReadTimeout                   time.Duration `env:"CACHE_REDIS_READ_TIMEOUT" envDefault:"0"`
+			RedisWriteTimeout                  time.Duration `env:"CACHE_REDIS_WRITE_TIMEOUT" envDefault:"0"`
+			RedisPoolSize                      int           `env:"CACHE_REDIS_POOL_SIZE" envDefault:"0"`
+			RedisMinIdleConns                  int           `env:"CACHE_REDIS_MIN_IDLE_CONNS" envDefault:"0"`
+			CacheMetrics                       bool          `env:"CACHE_METRICS" envDefault:"true"`
+			DisableInMemoryCache               bool          `env:"CACHE_DISABLE_IN_MEMORY" envDefault:"false"`
+			RedisToken                         string        `env:"REDIS_CACHE_TOKEN" envDefault:""`
 			ConcurrencyEnabled                 bool          `env:"CONCURRENCY_ENABLED" envDefault:"false"`
 			ConcurrencyTokenProcessing         bool          `env:"CONCURRENCY_TOKEN_PROCESSING" envDefault:"false"`
 			ConcurrencyRuleProcessing          bool          `env:"CONCURRENCY_RULE_PROCESSING" envDefault:"false"`
@@ -61,7 +62,7 @@ func setupRedis(t *testing.T) config.EnvConfig {
 		}{
 			Cache:               true,
 			CacheTTL:            5 * time.Minute,
-			RedisCacheAddr:       redisAddr,
+			RedisCacheAddr:      redisAddr,
 			RedisDisableCluster: true,
 		},
 		MaxBatchSize:             100,

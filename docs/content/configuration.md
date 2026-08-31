@@ -28,6 +28,7 @@ Cache configuration uses the `PRIVACY_CACHE_` prefix. When caching is enabled, r
 | `PRIVACY_CACHE_TTL` | `1h` | Cache entry time-to-live |
 | `PRIVACY_CACHE_REDIS_ADDR` | `""` | Valkey/Redis address in `host:port` format |
 | `PRIVACY_CACHE_REDIS_DISABLE_CLUSTER` | `false` | Use standalone client instead of cluster mode |
+| `PRIVACY_CACHE_REDIS_READ_FROM_REPLICAS` | `false` | Route read-only cache commands to Valkey replicas |
 | `PRIVACY_CACHE_REDIS_DIAL_TIMEOUT` | `0` | Connection dial timeout |
 | `PRIVACY_CACHE_REDIS_READ_TIMEOUT` | `0` | Socket read timeout |
 | `PRIVACY_CACHE_REDIS_WRITE_TIMEOUT` | `0` | Socket write timeout |
