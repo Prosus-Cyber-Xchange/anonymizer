@@ -1,12 +1,12 @@
 package server
 
 import (
-	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/handler"
-	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/config"
-	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/internal/handler"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/config"
+	"github.com/Prosus-Cyber-Xchange/anonymizer/pkg/privacy"
 	"log/slog"
 	"net/http"
 	"os"
@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 	"github.com/uber-go/tally/v4"
+	"github.com/valkey-io/valkey-go"
 )
 
 // AnonymizerServer is the configured anonymizer application.
@@ -75,6 +76,13 @@ func NewFromConfig(ctx context.Context, opts ...Option) (*AnonymizerServer, erro
 				RedisInsecureSkipVerify: true,
 				RedisDisableClusterMode: a.envConfig.Privacy.RedisDisableCluster,
 			},
+		}
+		if a.envConfig.Privacy.RedisReadFromReplicas {
+			runnerOpts.Cache.ValkeyConfigMutator = func(option *valkey.ClientOption) {
+				option.SendToReplicas = func(command valkey.Completed) bool {
+					return command.IsReadOnly()
+				}
+			}
 		}
 
 		runnerOpts.Concurrency = analyzer.ConcurrencyOptions{

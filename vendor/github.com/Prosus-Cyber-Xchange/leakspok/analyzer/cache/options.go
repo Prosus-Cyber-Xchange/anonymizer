@@ -2,6 +2,8 @@ package cache
 
 import (
 	"time"
+
+	"github.com/valkey-io/valkey-go"
 )
 
 // RuleMatchingCacheOptions configures a RuleMatchingCache instance.
@@ -12,6 +14,11 @@ type RuleMatchingCacheOptions struct {
 	// When false (default), valkey-go uses DoCache for local caching with
 	// server-driven invalidation. Set to true to disable and always hit the server.
 	DisableInMemoryCache bool
+	// ValkeyConfigMutator, when non-nil, is invoked exactly once with the
+	// concrete valkey.ClientOption that Leakspok built from the options below,
+	// immediately before the client is created. It allows callers to inspect or
+	// override any upstream valkey-go option (for example replica routing).
+	ValkeyConfigMutator func(*valkey.ClientOption)
 	// Redis configures the Redis/Valkey backend connection.
 	Redis RedisOptions
 }

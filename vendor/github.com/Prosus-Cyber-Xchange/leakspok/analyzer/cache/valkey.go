@@ -60,6 +60,10 @@ func NewRuleMatchingCache(ctx context.Context, options RuleMatchingCacheOptions)
 		}
 	}
 
+	if options.ValkeyConfigMutator != nil {
+		options.ValkeyConfigMutator(&opt)
+	}
+
 	client, err := valkey.NewClient(opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create valkey client: %w", err)

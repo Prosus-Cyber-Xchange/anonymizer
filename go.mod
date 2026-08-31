@@ -3,7 +3,7 @@ module github.com/Prosus-Cyber-Xchange/anonymizer
 go 1.25.0
 
 require (
-	github.com/Prosus-Cyber-Xchange/leakspok v0.1.1
+	github.com/Prosus-Cyber-Xchange/leakspok v0.2.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/go-chi/chi/v5 v5.2.3
@@ -13,6 +13,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/testcontainers/testcontainers-go/modules/redis v0.42.0
 	github.com/uber-go/tally/v4 v4.1.17
+	github.com/valkey-io/valkey-go v1.0.75
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 )
@@ -107,7 +108,6 @@ require (
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/trailofbits/go-mutexasserts v0.0.0-20250514102930-c1f3d2e37561 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
-	github.com/valkey-io/valkey-go v1.0.75 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component v1.56.0 // indirect

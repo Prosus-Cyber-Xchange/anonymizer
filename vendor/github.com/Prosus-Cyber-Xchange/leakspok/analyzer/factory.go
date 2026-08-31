@@ -9,6 +9,7 @@ import (
 
 	analyzercache "github.com/Prosus-Cyber-Xchange/leakspok/analyzer/cache"
 	"github.com/panjf2000/ants/v2"
+	"github.com/valkey-io/valkey-go"
 )
 
 func poolOptions(opts ConcurrencyOptions) []ants.Option {
@@ -56,6 +57,13 @@ type CacheOptions struct {
 	// RedisPingOnConnect controls whether a Ping is sent to Redis to verify connectivity
 	// when the client is first created. Default: false.
 	RedisPingOnConnect bool
+	// ValkeyConfigMutator, when non-nil, is forwarded unchanged to the cache
+	// layer and invoked exactly once with the concrete valkey.ClientOption that
+	// Leakspok built from the settings above, immediately before the Valkey
+	// client is created. It allows callers to inspect or override any upstream
+	// valkey-go option (for example replica routing). When nil, the established
+	// default mapping is preserved.
+	ValkeyConfigMutator func(*valkey.ClientOption)
 	// TracingEnabled enables DataDog APM tracing for cache store operations.
 	// Each GetMatch and SaveMatch call emits a DataDog span. Requires Enabled=true.
 	TracingEnabled bool
@@ -102,6 +110,7 @@ func buildCacheStore(ctx context.Context, options CacheOptions) (analyzercache.C
 	c, err := analyzercache.NewCacheStore(ctx, analyzercache.RuleMatchingCacheOptions{
 		CacheTTL:             options.TTL,
 		DisableInMemoryCache: options.DisableInMemoryCache,
+		ValkeyConfigMutator:  options.ValkeyConfigMutator,
 		Redis: analyzercache.RedisOptions{
 			Addr:               options.RedisAddr,
 			DisableClusterMode: options.RedisDisableClusterMode,
