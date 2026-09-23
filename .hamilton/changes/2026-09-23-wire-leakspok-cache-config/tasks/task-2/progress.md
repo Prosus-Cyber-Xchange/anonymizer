@@ -2,7 +2,7 @@
 artifact: task-progress
 change: 2026-09-23-wire-leakspok-cache-config
 task: 2
-status: pending
+status: done
 updated: 2026-09-23
 decision: accepted
 ---
