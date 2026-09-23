@@ -3,7 +3,7 @@ module github.com/Prosus-Cyber-Xchange/anonymizer
 go 1.25.0
 
 require (
-	github.com/Prosus-Cyber-Xchange/leakspok v0.2.0
+	github.com/Prosus-Cyber-Xchange/leakspok v0.3.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/go-chi/chi/v5 v5.2.3

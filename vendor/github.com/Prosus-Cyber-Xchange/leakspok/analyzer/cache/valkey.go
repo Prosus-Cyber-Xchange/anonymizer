@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"math/rand/v2"
 	"net"
 	"strings"
 	"sync"
@@ -26,6 +27,7 @@ import (
 type RuleMatchingCache struct {
 	client     valkey.Client
 	cacheTTL   time.Duration
+	jitterPct  float64
 	disableCSC bool
 	keyBufPool sync.Pool
 }
@@ -79,8 +81,20 @@ func NewRuleMatchingCache(ctx context.Context, options RuleMatchingCacheOptions)
 	return &RuleMatchingCache{
 		client:     client,
 		cacheTTL:   options.CacheTTL,
+		jitterPct:  options.TTLJitterPercentage,
 		disableCSC: options.DisableInMemoryCache,
 	}, nil
+}
+
+// jitteredTTL returns the base TTL randomized within +/-jitterPct.
+// A jitterPct of zero returns the base TTL unchanged. Callers already
+// guard the no-expiry case (CacheTTL == 0) before calling.
+func (r *RuleMatchingCache) jitteredTTL() time.Duration {
+	if r.jitterPct <= 0 {
+		return r.cacheTTL
+	}
+	delta := time.Duration(float64(r.cacheTTL) * r.jitterPct * (2*rand.Float64() - 1)) //nolint:gosec // Expiry spreading only; not security-sensitive
+	return r.cacheTTL + delta
 }
 
 // GetMatch retrieves a cached rule matching result.
@@ -94,7 +108,7 @@ func (r *RuleMatchingCache) GetMatch(ctx context.Context, entity pattern.Entity,
 	if r.disableCSC || r.cacheTTL == 0 {
 		result = r.client.Do(ctx, r.client.B().Get().Key(key).Build())
 	} else {
-		result = r.client.DoCache(ctx, r.client.B().Get().Key(key).Cache(), r.cacheTTL)
+		result = r.client.DoCache(ctx, r.client.B().Get().Key(key).Cache(), r.jitteredTTL())
 	}
 
 	val, err := result.ToString()
@@ -121,7 +135,7 @@ func (r *RuleMatchingCache) SaveMatch(ctx context.Context, entity pattern.Entity
 
 	var cmd valkey.Completed
 	if r.cacheTTL > 0 {
-		cmd = r.client.B().Set().Key(key).Value(val).Px(r.cacheTTL).Build()
+		cmd = r.client.B().Set().Key(key).Value(val).Px(r.jitteredTTL()).Build()
 	} else {
 		cmd = r.client.B().Set().Key(key).Value(val).Build()
 	}

@@ -10,6 +10,10 @@ import (
 type RuleMatchingCacheOptions struct {
 	// CacheTTL is the time-to-live for cached entries. When 0, entries never expire.
 	CacheTTL time.Duration
+	// TTLJitterPercentage is the fraction (e.g. 0.15 = ±15%) by which every
+	// effective TTL is randomized around CacheTTL. Values <= 0 disable jitter.
+	// It applies to both the server SET PX write and the client-side cache TTL.
+	TTLJitterPercentage float64
 	// DisableInMemoryCache disables client-side caching (server-assisted CSC).
 	// When false (default), valkey-go uses DoCache for local caching with
 	// server-driven invalidation. Set to true to disable and always hit the server.

@@ -13,15 +13,23 @@ import (
 //
 // SerialRulesRunner is safe for concurrent use.
 type SerialRulesRunner struct {
-	logger *slog.Logger
-	cache  analyzercache.CacheStore
+	logger    *slog.Logger
+	cache     analyzercache.CacheStore
+	coalescer singleflightDoer
 }
 
-// NewSerialRulesRuner creates a new instance of SerialRulesRunner with the provided logger and cache store.
-func NewSerialRulesRuner(logger *slog.Logger, cache analyzercache.CacheStore) SerialRulesRunner {
+// NewSerialRulesRuner creates a new instance of SerialRulesRunner with the provided
+// logger, runner options, and cache store.
+func NewSerialRulesRuner(logger *slog.Logger, options RunnerOptions, cache analyzercache.CacheStore) SerialRulesRunner {
+	var coalescer singleflightDoer = disabledSingleflightCoalescer{}
+	if options.Cache.Enabled && options.Cache.SingleflightEnabled {
+		coalescer = newSingleflightCoalescer()
+	}
+
 	return SerialRulesRunner{
-		logger: logger,
-		cache:  cache,
+		logger:    logger,
+		cache:     cache,
+		coalescer: coalescer,
 	}
 }
 
@@ -56,13 +64,22 @@ func (s SerialRulesRunner) Process(ctx context.Context, rules []Rule, data []byt
 			continue
 		}
 
-		matched := rule.Matcher.Match(ctx, data)
-		if !matched {
-			err := s.cache.SaveMatch(ctx, rule.Matcher.Entity(), data, matched)
-			if err != nil {
-				s.logger.ErrorContext(ctx, "Failed to save matching rule in cache", "error", err)
-			}
+		// Coalesce identical concurrent misses for the same entity+data key.
+		// The exception check stays outside the flight; the matcher and the
+		// negative-result save run inside it so a burst computes and saves once.
+		key := singleflightKey(string(rule.Matcher.Entity()), data)
+		matched, coalesceErr := s.coalescer.do(ctx, key, func() (bool, error) {
+			return s.matchAndSave(ctx, rule, data)
+		})
+		if coalesceErr != nil {
+			// A cancelled waiter never computes; a failed negative-result save
+			// is reported and the rule is skipped, matching the log-and-continue
+			// convention.
+			s.logger.ErrorContext(ctx, "Failed to save matching rule in cache", "error", coalesceErr)
+			continue
+		}
 
+		if !matched {
 			continue
 		}
 
@@ -71,6 +88,19 @@ func (s SerialRulesRunner) Process(ctx context.Context, rules []Rule, data []byt
 	}
 
 	return Rule{}, false
+}
+
+// matchAndSave runs the matcher and persists a negative result when it does
+// not match, returning the computation result for the coalescer.
+func (s SerialRulesRunner) matchAndSave(ctx context.Context, rule Rule, data []byte) (bool, error) {
+	matched := rule.Matcher.Match(ctx, data)
+	if !matched {
+		if err := s.cache.SaveMatch(ctx, rule.Matcher.Entity(), data, matched); err != nil {
+			return false, err
+		}
+	}
+
+	return matched, nil
 }
 
 // Stop is a no-op for SerialRulesRunner (it has no resources to release).
