@@ -12,11 +12,13 @@ type EnvConfig struct {
 	ServiceName string `env:"SERVICE_NAME" envDefault:""`
 
 	Privacy struct {
-		Cache                 bool          `env:"CACHE_ENABLED" envDefault:"false"`
-		CacheTTL              time.Duration `env:"CACHE_TTL" envDefault:"1h"`
-		RedisCacheAddr        string        `env:"CACHE_REDIS_ADDR" envDefault:""`
-		RedisDisableCluster   bool          `env:"CACHE_REDIS_DISABLE_CLUSTER" envDefault:"false"`
-		RedisReadFromReplicas bool          `env:"CACHE_REDIS_READ_FROM_REPLICAS" envDefault:"false"`
+		Cache                    bool          `env:"CACHE_ENABLED" envDefault:"false"`
+		CacheTTL                 time.Duration `env:"CACHE_TTL" envDefault:"1h"`
+		CacheSingleflightEnabled bool          `env:"CACHE_SINGLEFLIGHT_ENABLED" envDefault:"false"`
+		CacheTTLJitterPercentage float64       `env:"CACHE_TTL_JITTER_PERCENTAGE" envDefault:"0"`
+		RedisCacheAddr           string        `env:"CACHE_REDIS_ADDR" envDefault:""`
+		RedisDisableCluster      bool          `env:"CACHE_REDIS_DISABLE_CLUSTER" envDefault:"false"`
+		RedisReadFromReplicas    bool          `env:"CACHE_REDIS_READ_FROM_REPLICAS" envDefault:"false"`
 
 		RedisDialTimeout  time.Duration `env:"CACHE_REDIS_DIAL_TIMEOUT" envDefault:"0"`
 		RedisReadTimeout  time.Duration `env:"CACHE_REDIS_READ_TIMEOUT" envDefault:"0"`

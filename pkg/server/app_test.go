@@ -42,6 +42,8 @@ func setupRedis(t *testing.T) config.EnvConfig {
 		Privacy: struct {
 			Cache                              bool          `env:"CACHE_ENABLED" envDefault:"false"`
 			CacheTTL                           time.Duration `env:"CACHE_TTL" envDefault:"1h"`
+			CacheSingleflightEnabled           bool          `env:"CACHE_SINGLEFLIGHT_ENABLED" envDefault:"false"`
+			CacheTTLJitterPercentage           float64       `env:"CACHE_TTL_JITTER_PERCENTAGE" envDefault:"0"`
 			RedisCacheAddr                     string        `env:"CACHE_REDIS_ADDR" envDefault:""`
 			RedisDisableCluster                bool          `env:"CACHE_REDIS_DISABLE_CLUSTER" envDefault:"false"`
 			RedisReadFromReplicas              bool          `env:"CACHE_REDIS_READ_FROM_REPLICAS" envDefault:"false"`
@@ -262,6 +264,19 @@ func TestNewFromConfig_ConcurrencyConfigWired(t *testing.T) {
 	cfg.Privacy.ConcurrencyRuleProcessing = true
 	cfg.Privacy.ConcurrencyRuleRunnerPoolSize = 4
 	cfg.Privacy.ConcurrencyTokenPoolSize = 8
+
+	app, err := server.NewFromConfig(context.Background(), server.WithEnv(cfg))
+	require.NoError(t, err)
+	require.NotNil(t, app)
+
+	h := app.Handler()
+	assert.NotNil(t, h)
+}
+
+func TestNewFromConfig_SingleflightAndJitterWired(t *testing.T) {
+	cfg := setupRedis(t)
+	cfg.Privacy.CacheSingleflightEnabled = true
+	cfg.Privacy.CacheTTLJitterPercentage = 0.15
 
 	app, err := server.NewFromConfig(context.Background(), server.WithEnv(cfg))
 	require.NoError(t, err)
