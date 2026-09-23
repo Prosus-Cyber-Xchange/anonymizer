@@ -272,3 +272,16 @@ func TestNewFromConfig_ConcurrencyConfigWired(t *testing.T) {
 	h := app.Handler()
 	assert.NotNil(t, h)
 }
+
+func TestNewFromConfig_SingleflightAndJitterWired(t *testing.T) {
+	cfg := setupRedis(t)
+	cfg.Privacy.CacheSingleflightEnabled = true
+	cfg.Privacy.CacheTTLJitterPercentage = 0.15
+
+	app, err := server.NewFromConfig(context.Background(), server.WithEnv(cfg))
+	require.NoError(t, err)
+	require.NotNil(t, app)
+
+	h := app.Handler()
+	assert.NotNil(t, h)
+}
