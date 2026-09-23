@@ -11,7 +11,7 @@ decision: accepted
 
 ## Attempt 1 — 2026-09-23
 
-**Outcome**: done
+- Outcome: done
 
 **Created**: none
 **Modified**: pkg/config/env.go, pkg/config/env_test.go, pkg/server/app_test.go
