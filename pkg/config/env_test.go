@@ -69,6 +69,32 @@ func TestLoadEnv_ReadFromReplicas(t *testing.T) {
 	assert.True(t, envConfig.Privacy.RedisReadFromReplicas)
 }
 
+func TestLoadEnv_SingleflightAndJitter(t *testing.T) {
+	t.Setenv("PRIVACY_CACHE_SINGLEFLIGHT_ENABLED", "true")
+	t.Setenv("PRIVACY_CACHE_TTL_JITTER_PERCENTAGE", "0.15")
+
+	envConfig, err := config.LoadEnv()
+
+	require.NoError(t, err)
+	assert.True(t, envConfig.Privacy.CacheSingleflightEnabled)
+	assert.InDelta(t, 0.15, envConfig.Privacy.CacheTTLJitterPercentage, 1e-9)
+}
+
+func TestLoadEnv_SingleflightAndJitterDefaults(t *testing.T) {
+	os.Unsetenv("PRIVACY_CACHE_SINGLEFLIGHT_ENABLED")
+	os.Unsetenv("PRIVACY_CACHE_TTL_JITTER_PERCENTAGE")
+	defer func() {
+		os.Unsetenv("PRIVACY_CACHE_SINGLEFLIGHT_ENABLED")
+		os.Unsetenv("PRIVACY_CACHE_TTL_JITTER_PERCENTAGE")
+	}()
+
+	envConfig, err := config.LoadEnv()
+
+	require.NoError(t, err)
+	assert.False(t, envConfig.Privacy.CacheSingleflightEnabled)
+	assert.Zero(t, envConfig.Privacy.CacheTTLJitterPercentage)
+}
+
 func TestLoadEnv_InvalidPort(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
