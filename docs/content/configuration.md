@@ -26,6 +26,8 @@ Cache configuration uses the `PRIVACY_CACHE_` prefix. When caching is enabled, r
 |----------|---------|-------------|
 | `PRIVACY_CACHE_ENABLED` | `false` | Enable rule matching cache |
 | `PRIVACY_CACHE_TTL` | `1h` | Cache entry time-to-live |
+| `PRIVACY_CACHE_SINGLEFLIGHT_ENABLED` | `false` | Coalesce identical concurrent cache-miss computations into one per key; ignored when the cache is disabled |
+| `PRIVACY_CACHE_TTL_JITTER_PERCENTAGE` | `0` | Fraction by which each cache TTL is randomized, e.g. `0.15` = ±15%; `0` disables jitter |
 | `PRIVACY_CACHE_REDIS_ADDR` | `""` | Valkey/Redis address in `host:port` format |
 | `PRIVACY_CACHE_REDIS_DISABLE_CLUSTER` | `false` | Use standalone client instead of cluster mode |
 | `PRIVACY_CACHE_REDIS_READ_FROM_REPLICAS` | `false` | Route read-only cache commands to Valkey replicas |
