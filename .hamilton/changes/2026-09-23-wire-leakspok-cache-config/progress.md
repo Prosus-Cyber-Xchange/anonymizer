@@ -1,7 +1,7 @@
 ---
 artifact: progress
 change: 2026-09-23-wire-leakspok-cache-config
-status: pending
+status: complete
 updated: 2026-09-23
 decision: accepted
 tasks:
@@ -26,8 +26,8 @@ tasks:
 # Progress: Wire leakspok cache config (singleflight + TTL jitter)
 
 | Task | Status | Progress |
-|------|--------|----------|
-| Task 1: Update leakspok to v0.3.0 and re-vendor | done | [tasks/task-1/progress.md](tasks/task-1/progress.md) |
-| Task 2: Add cache singleflight and TTL jitter env vars to config | done | [tasks/task-2/progress.md](tasks/task-2/progress.md) |
-| Task 3: Wire singleflight and jitter fields into analyzer cache options | done | [tasks/task-3/progress.md](tasks/task-3/progress.md) |
-| Task 4: Document the new cache env vars | done | [tasks/task-4/progress.md](tasks/task-4/progress.md) |
+| --- | --- | --- |
+| Task 1: Update leakspok to v0.3.0 and re-vendor | done | [details](tasks/task-1/progress.md) |
+| Task 2: Add cache singleflight and TTL jitter env vars to config | done | [details](tasks/task-2/progress.md) |
+| Task 3: Wire singleflight and jitter fields into analyzer cache options | done | [details](tasks/task-3/progress.md) |
+| Task 4: Document the new cache env vars | done | [details](tasks/task-4/progress.md) |

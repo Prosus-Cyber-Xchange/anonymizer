@@ -9,7 +9,7 @@ decision: accepted
 
 # Task Progress: Task 4 — Document the new cache env vars
 
-## Attempt 1
+## Attempt 1 — 2026-09-23
 
 - Date: 2026-09-23
 - Outcome: done

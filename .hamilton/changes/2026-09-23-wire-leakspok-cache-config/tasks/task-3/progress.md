@@ -9,7 +9,7 @@ decision: accepted
 
 # Task Progress: Task 3 — Wire singleflight and jitter fields into analyzer cache options
 
-## Attempt 1
+## Attempt 1 — 2026-09-23
 
 - Date: 2026-09-23
 - Outcome: done

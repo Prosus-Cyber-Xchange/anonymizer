@@ -74,3 +74,6 @@ agent_context
 .specify
 spec
 docs/site/
+
+## Hamilton
+.hamilton/changes/*/tasks/*/.base

@@ -9,7 +9,7 @@ decision: accepted
 
 # Task Progress: Task 1 — Update leakspok to v0.3.0 and re-vendor
 
-## Attempt 1
+## Attempt 1 — 2026-09-23
 
 - Date: 2026-09-23
 - Outcome: done
