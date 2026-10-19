@@ -73,7 +73,7 @@ type CacheOptions struct {
 	// default mapping is preserved.
 	ValkeyConfigMutator func(*valkey.ClientOption)
 	// TracingEnabled enables DataDog APM tracing for cache store operations.
-	// Each GetMatch and SaveMatch call emits a DataDog span. Requires Enabled=true.
+	// Requires Enabled=true.
 	TracingEnabled bool
 }
 
