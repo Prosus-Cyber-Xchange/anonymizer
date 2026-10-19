@@ -10,7 +10,7 @@ import (
 var _ CacheStore = (*CacheStoreTracer)(nil)
 
 // CacheStoreTracer is a decorator for CacheStore that adds DataDog APM tracing.
-// Each GetMatch and SaveMatch call emits a DataDog span with a cache.entity tag.
+// Each GetMatches and SaveMatches call emits a DataDog span with a cache.token tag.
 type CacheStoreTracer struct {
 	underlying CacheStore
 }
@@ -20,20 +20,22 @@ func NewCacheStoreTracer(underlying CacheStore) *CacheStoreTracer {
 	return &CacheStoreTracer{underlying: underlying}
 }
 
-// GetMatch starts a DataDog trace span and delegates to the underlying cache,
-// forwarding the span-bearing context so the cache operation nests under the span.
-func (c *CacheStoreTracer) GetMatch(ctx context.Context, entity pattern.Entity, data []byte) (bool, error) {
-	newCtx, finish := monitoring.TraceCacheGet(ctx, string(entity))
+// GetMatches starts a DataDog trace span and delegates to the underlying cache,
+// forwarding the span-bearing context so the token-scoped cache operation
+// nests under the span.
+func (c *CacheStoreTracer) GetMatches(ctx context.Context, data []byte) (map[pattern.Entity]bool, error) {
+	newCtx, finish := monitoring.TraceCacheGetMatches(ctx, string(data))
 	defer finish()
 
-	return c.underlying.GetMatch(newCtx, entity, data)
+	return c.underlying.GetMatches(newCtx, data)
 }
 
-// SaveMatch starts a DataDog trace span and delegates to the underlying cache,
-// forwarding the span-bearing context so the cache operation nests under the span.
-func (c *CacheStoreTracer) SaveMatch(ctx context.Context, entity pattern.Entity, data []byte, matched bool) error {
-	newCtx, finish := monitoring.TraceCacheSave(ctx, string(entity))
+// SaveMatches starts a DataDog trace span and delegates to the underlying cache,
+// forwarding the span-bearing context so the token-scoped cache operation
+// nests under the span.
+func (c *CacheStoreTracer) SaveMatches(ctx context.Context, data []byte, results map[pattern.Entity]bool) error {
+	newCtx, finish := monitoring.TraceCacheSaveMatches(ctx, string(data))
 	defer finish()
 
-	return c.underlying.SaveMatch(newCtx, entity, data, matched)
+	return c.underlying.SaveMatches(newCtx, data, results)
 }

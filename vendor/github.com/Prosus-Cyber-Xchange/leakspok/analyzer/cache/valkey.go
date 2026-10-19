@@ -4,15 +4,20 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"net"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Prosus-Cyber-Xchange/leakspok/pattern"
 	"github.com/valkey-io/valkey-go"
 )
+
+// matchKeyNamespace prefixes every token hash key. It marks the token-hash data
+// layout and prevents collisions with other applications sharing the backend;
+// the encoding lives only in this adapter.
+const matchKeyNamespace = "leakspok:m:"
 
 // RuleMatchingCache caches rule matching results using valkey-go.
 //
@@ -29,7 +34,6 @@ type RuleMatchingCache struct {
 	cacheTTL   time.Duration
 	jitterPct  float64
 	disableCSC bool
-	keyBufPool sync.Pool
 }
 
 // NewRuleMatchingCache creates a RuleMatchingCache from the provided options.
@@ -97,76 +101,111 @@ func (r *RuleMatchingCache) jitteredTTL() time.Duration {
 	return r.cacheTTL + delta
 }
 
-// GetMatch retrieves a cached rule matching result.
-// Uses DoCache for client-side caching unless disabled; falls back to Do otherwise.
-// Auto pipelining coalesces concurrent calls into a single network round-trip.
-func (r *RuleMatchingCache) GetMatch(ctx context.Context, entity pattern.Entity, data []byte) (bool, error) {
-	key := r.key(entity, data)
+// useClientSideCache reports whether reads may be served from the process-local
+// client-side cache: it requires CSC to be enabled and a positive base TTL for
+// the jittered local expiry.
+func (r *RuleMatchingCache) useClientSideCache() bool {
+	return !r.disableCSC && r.cacheTTL > 0
+}
+
+// matchKey encodes a token's hash key: the token content under the namespace.
+func matchKey(data []byte) string {
+	return matchKeyNamespace + string(data)
+}
+
+// GetMatches retrieves every rule-matching result stored for the token's hash
+// with a single HGETALL command, using DoCache for client-side caching when it
+// is enabled and the base TTL is positive, and plain Do otherwise. An empty
+// hash yields an empty map and a nil error: nothing is cached for the token.
+func (r *RuleMatchingCache) GetMatches(ctx context.Context, data []byte) (map[pattern.Entity]bool, error) {
+	key := matchKey(data)
 
 	var result valkey.ValkeyResult
 
-	if r.disableCSC || r.cacheTTL == 0 {
-		result = r.client.Do(ctx, r.client.B().Get().Key(key).Build())
+	if !r.useClientSideCache() {
+		result = r.client.Do(ctx, r.client.B().Hgetall().Key(key).Build())
 	} else {
-		result = r.client.DoCache(ctx, r.client.B().Get().Key(key).Cache(), r.jitteredTTL())
+		result = r.client.DoCache(ctx, r.client.B().Hgetall().Key(key).Cache(), r.jitteredTTL())
 	}
 
-	val, err := result.ToString()
+	fields, err := result.AsMap()
 	if err != nil {
-		if valkey.IsValkeyNil(err) {
-			return false, ErrCacheNotFound
+		return nil, err
+	}
+
+	results := make(map[pattern.Entity]bool, len(fields))
+	for field, message := range fields {
+		value, convErr := message.ToString()
+		if convErr != nil {
+			return nil, convErr
 		}
-
-		return false, err
+		results[pattern.Entity(field)] = value == "1"
 	}
 
-	return val == "1", nil
+	return results, nil
 }
 
-// SaveMatch caches a rule matching result.
-// Auto pipelining coalesces concurrent writes into a single network round-trip.
-func (r *RuleMatchingCache) SaveMatch(ctx context.Context, entity pattern.Entity, data []byte, matched bool) error {
-	key := r.key(entity, data)
-
-	val := "0"
-	if matched {
-		val = "1"
+// SaveMatches persists a batch of rule-matching results for the token's hash in
+// a single multi-field HSET. When the base TTL is positive the HSET is issued
+// together with EXPIRE NX in one DoMulti, establishing the jittered TTL exactly
+// once at the key's first write while existing expiries are never extended; a
+// zero base TTL writes the hash without expiry. An empty batch is a no-op.
+func (r *RuleMatchingCache) SaveMatches(ctx context.Context, data []byte, results map[pattern.Entity]bool) error {
+	if len(results) == 0 {
+		return nil
 	}
 
-	var cmd valkey.Completed
-	if r.cacheTTL > 0 {
-		cmd = r.client.B().Set().Key(key).Value(val).Px(r.jitteredTTL()).Build()
-	} else {
-		cmd = r.client.B().Set().Key(key).Value(val).Build()
+	key := matchKey(data)
+
+	hset := r.client.B().Hset().Key(key).FieldValue()
+	for entity, matched := range results {
+		value := "0"
+		if matched {
+			value = "1"
+		}
+		hset = hset.FieldValue(string(entity), value)
 	}
 
-	return r.client.Do(ctx, cmd).Error()
+	if r.cacheTTL == 0 {
+		return r.client.Do(ctx, hset.Build()).Error()
+	}
+
+	resp := r.client.DoMulti(ctx,
+		hset.Build(),
+		r.client.B().Expire().Key(key).Seconds(r.expireSeconds()).Nx().Build(),
+	)
+	if err := resp[0].Error(); err != nil {
+		return err
+	}
+
+	return resp[1].Error()
 }
 
-// key generates a cache key in "entity:data" format, reusing a sync.Pool buffer.
-func (r *RuleMatchingCache) key(x pattern.Entity, y []byte) string {
-	n := len(x) + 1 + len(y)
+// expireSeconds converts the jittered base TTL into whole seconds for the
+// EXPIRE command, clamped into the jitter band [base×(1−P), base×(1+P)] so the
+// second-granularity command cannot fall outside it. Callers already guard the
+// no-expiry case (CacheTTL == 0) before calling.
+func (r *RuleMatchingCache) expireSeconds() int64 {
+	seconds := int64(math.Round(r.jitteredTTL().Seconds()))
 
-	var buf []byte
+	lower := int64(math.Ceil(float64(r.cacheTTL) * (1 - r.jitterPct) / float64(time.Second)))
+	upper := int64(math.Floor(float64(r.cacheTTL) * (1 + r.jitterPct) / float64(time.Second)))
 
-	if raw := r.keyBufPool.Get(); raw != nil {
-		//nolint:forcetypeassert,errcheck // sync.Pool stores []byte, type assertion is safe
-		buf = raw.([]byte)
+	// Second granularity may round the jittered TTL just outside the band; the
+	// clamps put it back in. When the band holds no whole second (sub-second
+	// base TTLs), lower exceeds upper and the clamps collapse onto the nearest
+	// representable second.
+	if seconds < lower {
+		seconds = lower
+	}
+	if seconds > upper {
+		seconds = upper
 	}
 
-	if cap(buf) < n {
-		buf = make([]byte, n)
+	// EXPIRE 0 deletes the key immediately; that must never happen.
+	if seconds < 1 {
+		seconds = 1
 	}
-	buf = buf[:n]
 
-	i := copy(buf, x)
-	buf[i] = ':'
-	copy(buf[i+1:], y)
-
-	s := string(buf)
-
-	//nolint:staticcheck // SA6002: using non-pointer intentionally for buffer reuse
-	r.keyBufPool.Put(buf)
-
-	return s
+	return seconds
 }
